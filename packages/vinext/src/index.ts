@@ -1,4 +1,4 @@
-import type { Plugin, UserConfig, ViteDevServer } from "vite";
+import type { Plugin, PluginOption, UserConfig, ViteDevServer } from "vite";
 import { loadEnv, parseAst } from "vite";
 import { pagesRouter, apiRouter, invalidateRouteCache, matchRoute, patternToNextFormat as pagesPatternToNextFormat, type Route } from "./routing/pages-router.js";
 import { appRouter, invalidateAppRouteCache } from "./routing/app-router.js";
@@ -40,6 +40,7 @@ import { scanMetadataFiles } from "./server/metadata-routes.js";
 import { staticExportPages } from "./build/static-export.js";
 import { detectPackageManager } from "./utils/project.js";
 import tsconfigPaths from "vite-tsconfig-paths";
+import react, { Options as VitePluginReactOptions } from "@vitejs/plugin-react";
 import MagicString from "magic-string";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -575,9 +576,17 @@ export interface VinextOptions {
    * @default true
    */
   rsc?: boolean;
+  /**
+   * Options passed to @vitejs/plugin-react (React Fast Refresh + JSX transform).
+   * Enabled by default. Set to `false` to disable (e.g. if you already have
+   * @vitejs/plugin-react in your vite.config.ts), or pass an options object
+   * to customize the Babel transform.
+   * @default true
+   */
+  react?: VitePluginReactOptions | boolean;
 }
 
-export default function vinext(options: VinextOptions = {}): Plugin[] {
+export default function vinext(options: VinextOptions = {}): PluginOption[] {
   let root: string;
   let pagesDir: string;
   let appDir: string;
@@ -1714,10 +1723,16 @@ hydrate();
   // files are detected and @mdx-js/rollup is installed.
   let mdxDelegate: Plugin | null = null;
 
-  const plugins: (Plugin | Promise<Plugin[]>)[] = [
+  const reactPlugin = options.react === false
+    ? false
+    : react(options.react === true ? undefined : options.react);
+
+  const plugins: PluginOption[] = [
     // Resolve tsconfig paths/baseUrl aliases so real-world Next.js repos
     // that use @/*, #/*, or baseUrl imports work out of the box.
     tsconfigPaths(),
+    // React Fast Refresh + JSX transform for client components.
+    reactPlugin,
     // Transform CJS require()/module.exports to ESM before other plugins
     // analyze imports (RSC directive scanning, shim resolution, etc.)
     commonjs(),
@@ -2381,12 +2396,11 @@ hydrate();
       name: "vinext:pages-router",
 
       // HMR: trigger full-reload for Pages Router page changes.
-      // Without @vitejs/plugin-react (React Fast Refresh), component edits
-      // can't be hot-updated. In theory Vite's default propagation should
-      // reach the root and trigger a full-reload, but the Pages Router
-      // injects hydration via inline <script type="module"> which may not
-      // be tracked in the module graph. Explicitly sending full-reload
-      // ensures changes are always reflected in the browser.
+      // Even with @vitejs/plugin-react providing React Fast Refresh,
+      // the Pages Router injects hydration via inline <script type="module">
+      // which may not be tracked in Vite's module graph. Explicitly
+      // sending full-reload ensures changes are always reflected in
+      // the browser.
       hotUpdate(options: { file: string; server: ViteDevServer; modules: any[] }) {
         if (!hasPagesDir || hasAppDir) return;
         if (options.file.startsWith(pagesDir) && fileMatcher.extensionRegex.test(options.file)) {
@@ -3670,7 +3684,7 @@ hydrate();
     plugins.push(rscPluginPromise);
   }
 
-  return plugins as Plugin[];
+  return plugins;
 }
 
 /**
