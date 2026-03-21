@@ -3634,14 +3634,17 @@ describe("generateRscEntry ISR code generation", () => {
     expect(code).toContain('"X-Vinext-Cache": "MISS"');
   });
 
-  it("generated code emits X-Vinext-Cache: HIT header on cache hits", () => {
+  it("generated code delegates X-Vinext-Cache: HIT responses to the page-cache helper", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
-    expect(code).toContain('"X-Vinext-Cache": "HIT"');
+    expect(code).toContain("readAppPageCacheResponse as __readAppPageCacheResponse");
+    expect(code).toContain("await __readAppPageCacheResponse({");
   });
 
-  it("generated code emits X-Vinext-Cache: STALE header on stale hits", () => {
+  it("generated code delegates X-Vinext-Cache: STALE responses to the page-cache helper", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
-    expect(code).toContain('"X-Vinext-Cache": "STALE"');
+    expect(code).toContain("readAppPageCacheResponse as __readAppPageCacheResponse");
+    expect(code).toContain("scheduleBackgroundRegeneration: __triggerBackgroundRegeneration");
+    expect(code).toContain("renderFreshPageForCache: async function()");
   });
 
   it("generated code uses request execution context for background cache write", () => {
@@ -3679,45 +3682,24 @@ describe("generateRscEntry ISR code generation", () => {
 
   it("generated code treats html:'' partial entries as MISS for HTML requests", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
-    // The ISR read block must check __hasHtml before returning an HTML HIT,
-    // so that a partial entry (html:"") falls through to render.
-    expect(code).toContain("__hasHtml");
-    // Must also check __hasRsc before returning an RSC HIT
-    expect(code).toContain("__hasRsc");
-    // HTML requests must only return HIT when __hasHtml is true.
-    // Slice from the ISR cache read comment to the main render call.
-    // Use "element = await buildPageElement" (the main page render, not the fn def or regen call).
-    const isrReadBlock = code.slice(
-      code.indexOf("ISR cache read"),
-      code.indexOf("element = await buildPageElement"),
-    );
-    expect(isrReadBlock.length).toBeGreaterThan(0);
-    expect(isrReadBlock).toContain("if (isRscRequest && __hasRsc)");
-    expect(isrReadBlock).toContain("if (!isRscRequest && __hasHtml)");
+    // APP_PAGE ISR reads now flow through the typed page-cache helper.
+    expect(code).toContain("readAppPageCacheResponse as __readAppPageCacheResponse");
+    expect(code).toContain("await __readAppPageCacheResponse({");
+    expect(code).toContain("isrHtmlKey: __isrHtmlKey");
+    expect(code).toContain("isrRscKey: __isrRscKey");
   });
 
   it("generated code serves cached rscData for RSC requests on HIT", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
-    // ISR read block must return rscData for RSC requests
-    expect(code).toContain("rscData");
-    expect(code).toContain("text/x-component");
-    // The ISR read block must have an explicit RSC hit path (not just an HTML path)
-    const isrReadBlock = code.slice(
-      code.indexOf("ISR cache read"),
-      code.indexOf("element = await buildPageElement"),
-    );
-    expect(isrReadBlock.length).toBeGreaterThan(0);
-    // Must serve RSC from cache using isRscRequest guard
-    expect(isrReadBlock).toContain("if (isRscRequest && __hasRsc)");
-    // Must NOT use the old bare !isRscRequest guard (HTML-only serving without data check)
-    expect(isrReadBlock).not.toContain("if (!isRscRequest) {");
+    // The helper receives the request type so it can serve cached RSC responses.
+    expect(code).toContain("readAppPageCacheResponse as __readAppPageCacheResponse");
+    expect(code).toContain("isRscRequest,");
   });
 
   it("ISR cache read fires before buildPageElement (early return on HIT)", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
-    // The ISR read block must appear before the main 'buildPageElement' render call.
-    // Use "element = await buildPageElement" to target the main call, not the fn definition.
-    const isrReadIdx = code.indexOf("__isrGet(");
+    // The page-cache helper call must appear before the main buildPageElement render call.
+    const isrReadIdx = code.indexOf("await __readAppPageCacheResponse(");
     const buildPageIdx = code.indexOf("element = await buildPageElement");
     expect(isrReadIdx).toBeGreaterThan(-1);
     expect(buildPageIdx).toBeGreaterThan(-1);
@@ -3726,9 +3708,9 @@ describe("generateRscEntry ISR code generation", () => {
 
   it("ISR cache read fires before generateStaticParams (skips expensive work on HIT)", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
-    // The ISR read block must appear before the generateStaticParams call so that
-    // a cache hit skips the potentially-expensive static params validation entirely.
-    const isrReadIdx = code.indexOf("__isrGet(");
+    // The page-cache helper call must appear before generateStaticParams so cache hits
+    // skip the static params validation entirely.
+    const isrReadIdx = code.indexOf("await __readAppPageCacheResponse(");
     const gspIdx = code.indexOf("generateStaticParams(");
     expect(isrReadIdx).toBeGreaterThan(-1);
     expect(gspIdx).toBeGreaterThan(-1);
