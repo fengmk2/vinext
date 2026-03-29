@@ -203,7 +203,9 @@ function toViteAliasReplacement(absolutePath: string, projectRoot: string): stri
 
   for (const rootCandidate of rootCandidates) {
     for (const pathCandidate of pathCandidates) {
-      if (pathCandidate === rootCandidate) return "/";
+      if (pathCandidate === rootCandidate) {
+        return normalizedPath;
+      }
       const relativeId = relativeWithinRoot(rootCandidate, pathCandidate);
       if (relativeId) return "/" + relativeId;
     }
@@ -1039,9 +1041,69 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
 
   const imageImportDimCache = new Map<string, { width: number; height: number }>();
 
-  // Shared state for the MDX proxy plugin. Populated during config() if MDX
-  // files are detected and @mdx-js/rollup is installed.
+  // Shared state for the MDX proxy plugin. We auto-inject @mdx-js/rollup when
+  // MDX is detected in app/pages during config(), and lazily on first plain
+  // .mdx transform for MDX that only enters the graph via import.meta.glob.
   let mdxDelegate: Plugin | null = null;
+  // Cached across calls — only the first invocation's `reason` affects logging.
+  // This is correct because config() always runs before transform() in the same build.
+  let mdxDelegatePromise: Promise<Plugin | null> | null = null;
+  let hasUserMdxPlugin = false;
+  let warnedMissingMdxPlugin = false;
+
+  async function ensureMdxDelegate(reason: "detected" | "on-demand"): Promise<Plugin | null> {
+    // Reuse the auto-injected delegate once it has been created.
+    // If the user registered their own MDX plugin and `mdxDelegate` is still null,
+    // return null here so transform() falls through without handling the file and
+    // the user's plugin can process the .mdx module later in the pipeline.
+    // Note: hasUserMdxPlugin is set during config(), which runs before transform().
+    if (mdxDelegate || hasUserMdxPlugin) return mdxDelegate;
+    if (!mdxDelegatePromise) {
+      mdxDelegatePromise = (async () => {
+        try {
+          const mdxRollup = await import("@mdx-js/rollup");
+          const mdxFactory = (mdxRollup.default ?? mdxRollup) as (
+            options: Record<string, unknown>,
+          ) => Plugin;
+          const mdxOpts: Record<string, unknown> = {};
+          if (nextConfig.mdx) {
+            if (nextConfig.mdx.remarkPlugins) mdxOpts.remarkPlugins = nextConfig.mdx.remarkPlugins;
+            if (nextConfig.mdx.rehypePlugins) mdxOpts.rehypePlugins = nextConfig.mdx.rehypePlugins;
+            if (nextConfig.mdx.recmaPlugins) mdxOpts.recmaPlugins = nextConfig.mdx.recmaPlugins;
+          }
+          const delegate = mdxFactory(mdxOpts);
+          mdxDelegate = delegate;
+          if (reason === "detected") {
+            if (nextConfig.mdx) {
+              console.log(
+                "[vinext] Auto-injected @mdx-js/rollup with remark/rehype plugins from next.config",
+              );
+            } else {
+              console.log("[vinext] Auto-injected @mdx-js/rollup for MDX support");
+            }
+          } else {
+            console.log("[vinext] Auto-injected @mdx-js/rollup for on-demand MDX support");
+          }
+          return delegate;
+        } catch {
+          // Only warn during "detected" path (MDX files in app/pages at config time).
+          // For "on-demand" (MDX encountered during transform), the error thrown
+          // in transform() is more actionable and immediate. Avoid double messaging.
+          if (reason === "detected" && !warnedMissingMdxPlugin) {
+            warnedMissingMdxPlugin = true;
+            console.warn(
+              "[vinext] MDX files detected but @mdx-js/rollup is not installed. " +
+                "Install it with: " +
+                detectPackageManager(process.cwd()) +
+                " @mdx-js/rollup",
+            );
+          }
+          return null;
+        }
+      })();
+    }
+    return mdxDelegatePromise;
+  }
 
   const plugins: PluginOption[] = [
     // Resolve tsconfig paths/baseUrl aliases so real-world Next.js repos
@@ -1348,7 +1410,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
 
         // Auto-inject @mdx-js/rollup when MDX files exist and no MDX plugin is
         // already configured. Applies remark/rehype plugins from next.config.
-        const hasMdxPlugin = pluginsFlat.some(
+        hasUserMdxPlugin = pluginsFlat.some(
           (p: any) =>
             p &&
             typeof p === "object" &&
@@ -1356,37 +1418,10 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
             (p.name === "@mdx-js/rollup" || p.name === "mdx"),
         );
         if (
-          !hasMdxPlugin &&
+          !hasUserMdxPlugin &&
           hasMdxFiles(root, hasAppDir ? appDir : null, hasPagesDir ? pagesDir : null)
         ) {
-          try {
-            const mdxRollup = await import("@mdx-js/rollup");
-            const mdxFactory = mdxRollup.default ?? mdxRollup;
-            const mdxOpts: Record<string, unknown> = {};
-            if (nextConfig.mdx) {
-              if (nextConfig.mdx.remarkPlugins)
-                mdxOpts.remarkPlugins = nextConfig.mdx.remarkPlugins;
-              if (nextConfig.mdx.rehypePlugins)
-                mdxOpts.rehypePlugins = nextConfig.mdx.rehypePlugins;
-              if (nextConfig.mdx.recmaPlugins) mdxOpts.recmaPlugins = nextConfig.mdx.recmaPlugins;
-            }
-            mdxDelegate = mdxFactory(mdxOpts);
-            if (nextConfig.mdx) {
-              console.log(
-                "[vinext] Auto-injected @mdx-js/rollup with remark/rehype plugins from next.config",
-              );
-            } else {
-              console.log("[vinext] Auto-injected @mdx-js/rollup for MDX support");
-            }
-          } catch {
-            // @mdx-js/rollup not installed — warn but don't fail
-            console.warn(
-              "[vinext] MDX files detected but @mdx-js/rollup is not installed. " +
-                "Install it with: " +
-                detectPackageManager(process.cwd()) +
-                " @mdx-js/rollup",
-            );
-          }
+          await ensureMdxDelegate("detected");
         }
 
         // Detect if this is a standalone SSR build (set by `vite build --ssr`
@@ -1972,14 +2007,27 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
         const fn = typeof hook === "function" ? hook : hook.handler;
         return fn.call(this, config, env);
       },
-      transform(code, id, options) {
+      async transform(code, id, options) {
         // Skip ?raw and other query imports — @mdx-js/rollup ignores the query
         // and would compile the file as MDX instead of returning raw text.
         if (id.includes("?")) return;
-        if (!mdxDelegate?.transform) return;
-        const hook = mdxDelegate.transform;
-        const fn = typeof hook === "function" ? hook : hook.handler;
-        return fn.call(this, code, id, options);
+        // Case-insensitive extension check for cross-platform compatibility
+        // (Windows/macOS case-insensitive, Linux case-sensitive)
+        if (!id.toLowerCase().endsWith(".mdx")) return;
+
+        const delegate = mdxDelegate ?? (await ensureMdxDelegate("on-demand"));
+        if (delegate?.transform) {
+          const hook = delegate.transform;
+          const transform = typeof hook === "function" ? hook : hook.handler;
+          return transform.call(this, code, id, options);
+        }
+
+        if (!hasUserMdxPlugin) {
+          throw new Error(
+            `[vinext] Encountered MDX module ${id} but no MDX plugin is configured. ` +
+              `Install @mdx-js/rollup or register an MDX plugin manually.`,
+          );
+        }
       },
     },
     // Shim React canary/experimental APIs (ViewTransition, addTransitionType)
@@ -3870,7 +3918,7 @@ function scanDirForMdx(dir: string): boolean {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (scanDirForMdx(full)) return true;
-      } else if (entry.isFile() && entry.name.endsWith(".mdx")) {
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".mdx")) {
         return true;
       }
     }
