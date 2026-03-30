@@ -66,6 +66,7 @@ import { createInstrumentationClientTransformPlugin } from "./plugins/instrument
 import { createOptimizeImportsPlugin } from "./plugins/optimize-imports.js";
 import { fixUseServerClosureCollisionPlugin } from "./plugins/fix-use-server-closure-collision.js";
 import { createOgInlineFetchAssetsPlugin, ogAssetsPlugin } from "./plugins/og-assets.js";
+import { createServerExternalsManifestPlugin } from "./plugins/server-externals-manifest.js";
 import {
   VIRTUAL_GOOGLE_FONTS,
   RESOLVED_VIRTUAL_GOOGLE_FONTS,
@@ -75,6 +76,7 @@ import {
   createLocalFontsPlugin,
 } from "./plugins/fonts.js";
 import { hasWranglerConfig, formatMissingCloudflarePluginError } from "./deploy.js";
+import { computeLazyChunks } from "./utils/lazy-chunks.js";
 import tsconfigPaths from "vite-tsconfig-paths";
 import type { Options as VitePluginReactOptions } from "@vitejs/plugin-react";
 import MagicString from "magic-string";
@@ -627,91 +629,6 @@ function getClientOutputConfigForVite(viteMajorVersion: number) {
         codeSplitting: clientCodeSplittingConfig,
       }
     : clientOutputConfig;
-}
-
-type BuildManifestChunk = {
-  file: string;
-  isEntry?: boolean;
-  isDynamicEntry?: boolean;
-  imports?: string[];
-  dynamicImports?: string[];
-  css?: string[];
-  assets?: string[];
-};
-
-/**
- * Compute the set of chunk filenames that are ONLY reachable through dynamic
- * imports (i.e. behind React.lazy(), next/dynamic, or manual import()).
- *
- * These chunks should NOT be modulepreloaded in the HTML — they will be
- * fetched on demand when the dynamic import executes.
- *
- * Algorithm: Starting from all entry chunks in the build manifest, walk the
- * static `imports` tree (breadth-first). Any chunk file NOT reached by this
- * walk is only reachable through `dynamicImports` and is therefore "lazy".
- *
- * @param buildManifest - Vite's build manifest (manifest.json), which is a
- *   Record<string, ManifestChunk> where each chunk has `file`, `imports`,
- *   `dynamicImports`, `isEntry`, and `isDynamicEntry` fields.
- * @returns Array of chunk filenames (e.g. "assets/mermaid-NOHMQCX5.js") that
- *   should be excluded from modulepreload hints.
- */
-function computeLazyChunks(buildManifest: Record<string, BuildManifestChunk>): string[] {
-  // Collect all chunk files that are statically reachable from entries
-  const eagerFiles = new Set<string>();
-  const visited = new Set<string>();
-  const queue: string[] = [];
-
-  // Start BFS from all entry chunks
-  for (const key of Object.keys(buildManifest)) {
-    const chunk = buildManifest[key];
-    if (chunk.isEntry) {
-      queue.push(key);
-    }
-  }
-
-  while (queue.length > 0) {
-    const key = queue.shift()!;
-    if (visited.has(key)) continue;
-    visited.add(key);
-
-    const chunk = buildManifest[key];
-    if (!chunk) continue;
-
-    // Mark this chunk's file as eager
-    eagerFiles.add(chunk.file);
-
-    // Also mark its CSS as eager (CSS should always be preloaded to avoid FOUC)
-    if (chunk.css) {
-      for (const cssFile of chunk.css) {
-        eagerFiles.add(cssFile);
-      }
-    }
-
-    // Follow only static imports — NOT dynamicImports
-    if (chunk.imports) {
-      for (const imp of chunk.imports) {
-        if (!visited.has(imp)) {
-          queue.push(imp);
-        }
-      }
-    }
-  }
-
-  // Any JS file in the manifest that's NOT in eagerFiles is a lazy chunk
-  const lazyChunks: string[] = [];
-  const allFiles = new Set<string>();
-  for (const key of Object.keys(buildManifest)) {
-    const chunk = buildManifest[key];
-    if (chunk.file && !allFiles.has(chunk.file)) {
-      allFiles.add(chunk.file);
-      if (!eagerFiles.has(chunk.file) && chunk.file.endsWith(".js")) {
-        lazyChunks.push(chunk.file);
-      }
-    }
-  }
-
-  return lazyChunks;
 }
 
 type BundleBackfillChunk = {
@@ -3264,6 +3181,11 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
     createOgInlineFetchAssetsPlugin(),
     // Copy @vercel/og binary assets to the RSC output directory — see src/plugins/og-assets.ts
     ogAssetsPlugin,
+    // Collect SSR/RSC bundle externals and write dist/server/vinext-externals.json.
+    // Used by emitStandaloneOutput to determine which packages to copy into
+    // standalone/node_modules/ — uses the bundler's own import graph instead of
+    // fragile regex scanning of emitted files.
+    createServerExternalsManifestPlugin(),
     // Write image config JSON for the App Router production server.
     // The App Router RSC entry doesn't export vinextConfig (that's a Pages
     // Router pattern), so we write a separate JSON file at build time that
