@@ -1,5 +1,11 @@
 blockExoticSubdeps: true
 minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - vite-plus
+  - "@voidzero-dev/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - "@anthropic-ai/*"
 
 packages:
   - packages/*
@@ -67,11 +73,11 @@ catalog:
   typescript: ^5.7.0
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.1.12
+  vite: npm:@voidzero-dev/vite-plus-core@0.1.16-alpha.4
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.1.12
+  vite-plus: 0.1.16-alpha.4
   vite-tsconfig-paths: ^6.1.1
-  vitest: npm:@voidzero-dev/vite-plus-test@0.1.12
+  vitest: npm:@voidzero-dev/vite-plus-test@0.1.16-alpha.4
   wrangler: ^4.80.0
   zod: 3.24.3
 overrides:
