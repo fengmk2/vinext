@@ -133,6 +133,14 @@ export function runWithRequestContext<T>(
  */
 export function runWithUnifiedStateMutation<T>(
   mutate: (ctx: UnifiedRequestContext) => void,
+  fn: () => Promise<T>,
+): Promise<T>;
+export function runWithUnifiedStateMutation<T>(
+  mutate: (ctx: UnifiedRequestContext) => void,
+  fn: () => T | Promise<T>,
+): T | Promise<T>;
+export function runWithUnifiedStateMutation<T>(
+  mutate: (ctx: UnifiedRequestContext) => void,
   fn: () => T | Promise<T>,
 ): T | Promise<T> {
   const parentCtx = _als.getStore();
