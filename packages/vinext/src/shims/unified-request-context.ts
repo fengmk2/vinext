@@ -109,6 +109,14 @@ export function createRequestContext(opts?: Partial<UnifiedRequestContext>): Uni
  */
 export function runWithRequestContext<T>(
   ctx: UnifiedRequestContext,
+  fn: () => Promise<T>,
+): Promise<T>;
+export function runWithRequestContext<T>(
+  ctx: UnifiedRequestContext,
+  fn: () => T | Promise<T>,
+): T | Promise<T>;
+export function runWithRequestContext<T>(
+  ctx: UnifiedRequestContext,
   fn: () => T | Promise<T>,
 ): T | Promise<T> {
   return _als.run(ctx, fn);
