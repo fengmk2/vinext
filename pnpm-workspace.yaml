@@ -5,6 +5,28 @@ minimumReleaseAgeExclude:
   - react-server-dom-webpack
   - react-dom
   - react
+  - vite-plus
+  - "@voidzero-dev/vite-plus-core"
+  - "@voidzero-dev/vite-plus-test"
+  - "@voidzero-dev/vite-plus-pack"
+  - "@voidzero-dev/vite-plus-lint"
+  - "@voidzero-dev/vite-plus-darwin-arm64"
+  - "@voidzero-dev/vite-plus-darwin-x64"
+  - "@voidzero-dev/vite-plus-linux-x64-gnu"
+  - "@voidzero-dev/vite-plus-linux-arm64-gnu"
+  - "@voidzero-dev/vite-plus-linux-x64-musl"
+  - "@voidzero-dev/vite-plus-linux-arm64-musl"
+  - "@voidzero-dev/vite-plus-win32-x64-msvc"
+  - "@voidzero-dev/vite-plus-win32-arm64-msvc"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/darwin-arm64"
+  - "@oxlint-tsgolint/darwin-x64"
+  - "@oxlint-tsgolint/linux-x64-gnu"
+  - "@oxlint-tsgolint/linux-arm64-gnu"
+  - "@oxlint-tsgolint/linux-x64-musl"
+  - "@oxlint-tsgolint/linux-arm64-musl"
+  - "@oxlint-tsgolint/win32-x64-msvc"
+  - "@oxlint-tsgolint/win32-arm64-msvc"
 
 packages:
   - packages/*
@@ -72,11 +94,11 @@ catalog:
   typescript: ^5.7.0
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.1.17
+  vite: npm:@voidzero-dev/vite-plus-core@0.1.19-alpha.3
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.1.17
+  vite-plus: 0.1.19-alpha.3
   vite-tsconfig-paths: ^6.1.1
-  vitest: npm:@voidzero-dev/vite-plus-test@0.1.17
+  vitest: npm:@voidzero-dev/vite-plus-test@0.1.19-alpha.3
   wrangler: ^4.80.0
   zod: 3.24.3
 overrides:
