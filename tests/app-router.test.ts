@@ -4422,6 +4422,54 @@ describe("generateRscEntry ISR code generation", () => {
     expect(code).toContain('"next/cache"');
   });
 
+  it("generated code stores root layout params separately from leaf params", () => {
+    const routes = [
+      {
+        ...minimalRoutes[0],
+        pattern: "/[lang]/[locale]/other/[slug]",
+        patternParts: [":lang", ":locale", "other", ":slug"],
+        params: ["lang", "locale", "slug"],
+        rootParamNames: ["lang", "locale"],
+        routeSegments: ["[lang]", "[locale]", "other", "[slug]"],
+        layoutTreePositions: [2],
+      },
+    ] as any[];
+
+    const code = generateRscEntry("/tmp/test/app", routes);
+
+    expect(code).toContain("setRootParams as __setRootParams");
+    expect(code).toContain("pickRootParams as __pickRootParams");
+    expect(code).toContain('rootParamNames: ["lang","locale"]');
+    expect(code).toContain("__setRootParams(__pickRootParams(params, route.rootParamNames));");
+    expect(code).toContain("function __clearRequestContext() {");
+    expect(code).toContain("__setRootParams(null);");
+  });
+
+  it("generated root params selection is delegated to the runtime shim", () => {
+    const code = generateRscEntry("/tmp/test/app", minimalRoutes);
+
+    expect(code).toContain("pickRootParams as __pickRootParams");
+    expect(code).not.toContain("function __pickRootParams(params, rootParamNames)");
+  });
+
+  it("root params runtime getter returns current request values", async () => {
+    const { getRootParam, pickRootParams, setRootParams } =
+      await import("../packages/vinext/src/shims/root-params.js");
+
+    expect(pickRootParams({ lang: "en", locale: "us", slug: "post" }, ["lang", "locale"])).toEqual({
+      lang: "en",
+      locale: "us",
+    });
+
+    setRootParams({ lang: "en", locale: "us" });
+
+    await expect(getRootParam("lang")).resolves.toBe("en");
+    await expect(getRootParam("locale")).resolves.toBe("us");
+    await expect(getRootParam("slug")).resolves.toBeUndefined();
+
+    setRootParams(null);
+  });
+
   it("generated code delegates page response policy to typed helpers", () => {
     const code = generateRscEntry("/tmp/test/app", minimalRoutes);
     expect(code).toContain("renderAppPageLifecycle as __renderAppPageLifecycle");
