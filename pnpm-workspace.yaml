@@ -1,4 +1,4 @@
-blockExoticSubdeps: true
+blockExoticSubdeps: false
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - "@vitejs/plugin-rsc"
@@ -6,6 +6,17 @@ minimumReleaseAgeExclude:
   - react-dom
   - react
   - next
+  - vite-plus
+  - "@voidzero-dev/vite-plus-core"
+  - "@voidzero-dev/vite-plus-test"
+  - "@voidzero-dev/vite-plus-prompts"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/darwin-arm64"
+  - "@oxlint-tsgolint/darwin-x64"
+  - "@oxlint-tsgolint/linux-arm64-gnu"
+  - "@oxlint-tsgolint/linux-x64-gnu"
+  - "@oxlint-tsgolint/win32-arm64"
+  - "@oxlint-tsgolint/win32-x64"
 
 packages:
   - packages/*
@@ -74,11 +85,11 @@ catalog:
   typescript: ^5.7.0
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.1.17
+  vite: https://pkg.pr.new/voidzero-dev/vite-plus/@voidzero-dev/vite-plus-core@1538
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.1.17
+  vite-plus: https://pkg.pr.new/voidzero-dev/vite-plus@1538
   vite-tsconfig-paths: ^6.1.1
-  vitest: npm:@voidzero-dev/vite-plus-test@0.1.17
+  vitest: https://pkg.pr.new/voidzero-dev/vite-plus/@voidzero-dev/vite-plus-test@1538
   wrangler: ^4.80.0
   zod: 3.24.3
   knip: ^6.6.2
