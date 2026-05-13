@@ -6,6 +6,8 @@ minimumReleaseAgeExclude:
   - react-dom
   - react
   - next
+  - vite-plus
+  - "@voidzero-dev/*"
 
 packages:
   - packages/*
