@@ -3127,13 +3127,18 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
               // pre-middleware request state; middleware response headers win
               // later because they are already on the outgoing response.
               if (nextConfig?.headers.length) {
-                applyHeaders(pathname, res, nextConfig.headers, preMiddlewareReqCtx);
+                applyHeaders(pathname, res, nextConfig.headers, preMiddlewareReqCtx, bp);
               }
 
               // Apply rewrites from next.config.js (beforeFiles)
               let resolvedUrl = url;
               if (nextConfig?.rewrites.beforeFiles.length) {
-                const rewritten = applyRewrites(pathname, nextConfig.rewrites.beforeFiles, reqCtx);
+                const rewritten = applyRewrites(
+                  pathname,
+                  nextConfig.rewrites.beforeFiles,
+                  reqCtx,
+                  bp,
+                );
                 if (rewritten) {
                   // Preserve original query params across the rewrite — Next.js
                   // semantics: `Object.assign(parsedUrl.query, rewriteQuery)`.
@@ -3193,6 +3198,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
                   resolvedUrl.split("?")[0],
                   nextConfig.rewrites.afterFiles,
                   reqCtx,
+                  bp,
                 );
                 if (afterRewrite) {
                   resolvedUrl = mergeRewriteQuery(resolvedUrl, afterRewrite);
@@ -3236,6 +3242,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
                   resolvedUrl.split("?")[0],
                   nextConfig.rewrites.fallback,
                   reqCtx,
+                  bp,
                 );
                 if (fallbackRewrite) {
                   // External fallback rewrite — proxy to external URL
@@ -4247,7 +4254,11 @@ function applyRedirects(
   ctx: RequestContext,
   basePath = "",
 ): boolean {
-  const result = matchRedirect(pathname, redirects, ctx);
+  // Vite strips the basePath before our middleware sees the request, so any
+  // pathname we see is implicitly "under basePath" for matching purposes.
+  // Default rules fire as expected; `basePath: false` rules cannot reach the
+  // dev server today because Vite won't proxy out-of-basepath requests.
+  const result = matchRedirect(pathname, redirects, ctx, { basePath, hadBasePath: true });
   if (result) {
     // Sanitize to prevent open redirect via protocol-relative URLs
     const dest = sanitizeDestination(
@@ -4333,8 +4344,11 @@ function applyRewrites(
   pathname: string,
   rewrites: NextRewrite[],
   ctx: RequestContext,
+  basePath = "",
 ): string | null {
-  const dest = matchRewrite(pathname, rewrites, ctx);
+  // Vite strips the basePath before our middleware sees the request; see
+  // applyRedirects for rationale.
+  const dest = matchRewrite(pathname, rewrites, ctx, { basePath, hadBasePath: true });
   if (dest) {
     // Sanitize to prevent open redirect via protocol-relative URLs
     return sanitizeDestination(dest);
@@ -4353,8 +4367,11 @@ function applyHeaders(
   res: any,
   headers: NextHeader[],
   ctx: RequestContext,
+  basePath = "",
 ): void {
-  const matched = matchHeaders(pathname, headers, ctx);
+  // Vite strips the basePath before our middleware sees the request; see
+  // applyRedirects for rationale.
+  const matched = matchHeaders(pathname, headers, ctx, { basePath, hadBasePath: true });
   for (const header of matched) {
     // Use append semantics for headers where multiple values must coexist
     // (Vary, Set-Cookie). Using setHeader() on these would destroy

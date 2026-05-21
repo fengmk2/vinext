@@ -86,10 +86,10 @@ export type NextRedirect = {
    */
   locale?: false;
   /**
-   * When `false`, Next.js does not prepend `basePath` to the rule's source.
-   * Currently parsed for forward compatibility but not yet applied — vinext
-   * strips basePath before matching, so all rules behave as if `basePath:false`
-   * is implicit. Tracking parity in a follow-up.
+   * When `false`, the rule is NOT prefixed with `basePath`. Source and
+   * destination are matched/applied verbatim. Mirrors Next.js's
+   * `Redirect.basePath: false` opt-out — see
+   * `.nextjs-ref/packages/next/src/lib/load-custom-routes.ts:26`.
    */
   basePath?: false;
 };
@@ -110,6 +110,8 @@ export type NextHeader = {
   has?: HasCondition[];
   missing?: HasCondition[];
   headers: Array<{ key: string; value: string }>;
+  /** See {@link NextRedirect.basePath}. */
+  basePath?: false;
 };
 
 export type NextI18nConfig = {

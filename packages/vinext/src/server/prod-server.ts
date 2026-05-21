@@ -1524,6 +1524,11 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
 
     try {
       // ── 2. Strip basePath ─────────────────────────────────────────
+      // Track whether the original request was under basePath. This drives
+      // the basePath gating of rewrites/redirects/headers below — Next.js
+      // only applies default rules to requests inside basePath, and only
+      // applies `basePath: false` rules to requests outside it.
+      const hadBasePath = !basePath || hasBasePath(pathname, basePath);
       {
         const stripped = stripBasePath(pathname, basePath);
         if (stripped !== pathname) {
@@ -1532,6 +1537,7 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
           pathname = stripped;
         }
       }
+      const basePathState = { basePath, hadBasePath };
 
       // ── 3. Trailing slash normalization ───────────────────────────
       {
@@ -1585,13 +1591,19 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
 
       // ── 4. Apply redirects from next.config.js ────────────────────
       if (configRedirects.length) {
-        const redirect = matchRedirect(pathname, configRedirects, reqCtx);
+        // The matcher sees the stripped pathname when the request was under
+        // basePath, and the original (un-stripped) pathname otherwise. The
+        // basePath gating inside `matchRedirect` then filters rules based on
+        // their `basePath: false` opt-out so the wrong rule set can't match.
+        const redirect = matchRedirect(pathname, configRedirects, reqCtx, basePathState);
         if (redirect) {
-          // Guard against double-prefixing: only add basePath if destination
-          // doesn't already start with it.
-          // Sanitize the final destination to prevent protocol-relative URL open redirects.
+          // Guard against double-prefixing: only add basePath if the
+          // request was under basePath AND the destination doesn't already
+          // start with it. basePath: false rules with `hadBasePath === false`
+          // must NOT receive a basePath prefix.
           const dest = sanitizeDestination(
             basePath &&
+              hadBasePath &&
               !isExternalUrl(redirect.destination) &&
               !hasBasePath(redirect.destination, basePath)
               ? basePath + redirect.destination
@@ -1718,6 +1730,7 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
           configHeaders,
           pathname,
           requestContext: reqCtx,
+          basePathState,
         });
       }
 
@@ -1753,8 +1766,14 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
       }
 
       // ── 7. Apply beforeFiles rewrites from next.config.js ─────────
+      let configRewriteFired = false;
       if (configRewrites.beforeFiles?.length) {
-        const rewritten = matchRewrite(resolvedPathname, configRewrites.beforeFiles, postMwReqCtx);
+        const rewritten = matchRewrite(
+          resolvedPathname,
+          configRewrites.beforeFiles,
+          postMwReqCtx,
+          basePathState,
+        );
         if (rewritten) {
           if (isExternalUrl(rewritten)) {
             const proxyResponse = await proxyExternalRequest(webRequest, rewritten);
@@ -1765,7 +1784,20 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
           // rewrite. Matches Next.js `Object.assign(parsedUrl.query, ...)`.
           resolvedUrl = mergeRewriteQuery(resolvedUrl, rewritten);
           resolvedPathname = resolvedUrl.split("?")[0];
+          configRewriteFired = true;
         }
+      }
+
+      // ── 7b. Reject out-of-basePath requests that no rule rewrote ──
+      // When `basePath` is configured and the request was outside it,
+      // only `basePath: false` rules can keep it alive. If none matched,
+      // the request must 404 — Next.js does not serve internal routes
+      // from outside the configured basePath.
+      // @see .nextjs-ref/packages/next/src/server/lib/router-utils/resolve-routes.ts:304-309
+      if (basePath && !hadBasePath && !configRewriteFired) {
+        res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+        res.end("This page could not be found");
+        return;
       }
 
       // ── 8. API routes ─────────────────────────────────────────────
@@ -1813,7 +1845,12 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
       // ── 9. Apply afterFiles rewrites from next.config.js ──────────
       // These run after non-dynamic page routes but before dynamic routes.
       if ((!pageMatch || pageMatch.route.isDynamic) && configRewrites.afterFiles?.length) {
-        const rewritten = matchRewrite(resolvedPathname, configRewrites.afterFiles, postMwReqCtx);
+        const rewritten = matchRewrite(
+          resolvedPathname,
+          configRewrites.afterFiles,
+          postMwReqCtx,
+          basePathState,
+        );
         if (rewritten) {
           if (isExternalUrl(rewritten)) {
             const proxyResponse = await proxyExternalRequest(webRequest, rewritten);
@@ -1843,6 +1880,7 @@ async function startPagesRouterServer(options: PagesRouterServerOptions) {
             resolvedPathname,
             configRewrites.fallback,
             postMwReqCtx,
+            basePathState,
           );
           if (fallbackRewrite) {
             if (isExternalUrl(fallbackRewrite)) {

@@ -11,6 +11,7 @@ import {
   proxyExternalRequest,
   requestContextFromRequest,
   sanitizeDestination,
+  type BasePathMatchState,
 } from "../config/config-matchers.js";
 import { headersContextFromRequest } from "vinext/shims/headers";
 import {
@@ -221,6 +222,10 @@ function isExecutionContextLike(value: unknown): value is ExecutionContextLike {
   return hasProperty(value, "waitUntil") && typeof value.waitUntil === "function";
 }
 
+// TODO(#1333): once App Router supports `basePath: false` rules (see
+// `normalizeRscRequest` — it 404s out-of-basePath requests before they
+// reach this code), pass `hadBasePath` here and skip the prefix when
+// false, mirroring the same guard in `prod-server.ts` and `deploy.ts`.
 function redirectDestinationWithBasePath(destination: string, basePath: string): string {
   if (!basePath || isExternalUrl(destination) || hasBasePath(destination, basePath)) {
     return destination;
@@ -230,6 +235,7 @@ function redirectDestinationWithBasePath(destination: string, basePath: string):
 
 async function applyRewrite(
   options: {
+    basePathState: BasePathMatchState;
     clearRequestContext: () => void;
     request: Request;
     requestContext: RequestContext;
@@ -239,7 +245,12 @@ async function applyRewrite(
 ): Promise<Response | string | null> {
   if (!options.rewrites.length) return null;
 
-  const rewritten = matchRewrite(cleanPathname, options.rewrites, options.requestContext);
+  const rewritten = matchRewrite(
+    cleanPathname,
+    options.rewrites,
+    options.requestContext,
+    options.basePathState,
+  );
   if (!rewritten) return null;
 
   if (isExternalUrl(rewritten)) {
@@ -253,6 +264,7 @@ async function applyRewrite(
 function applyConfigHeadersToMiddlewareRedirect(
   response: Response,
   options: {
+    basePathState: BasePathMatchState;
     configHeaders: NextHeader[];
     pathname: string;
     requestContext: RequestContext;
@@ -269,6 +281,7 @@ function applyConfigHeadersToMiddlewareRedirect(
     configHeaders: options.configHeaders,
     pathname: options.pathname,
     requestContext: options.requestContext,
+    basePathState: options.basePathState,
   });
 
   if (!headers.entries().next().done) {
@@ -310,6 +323,14 @@ async function handleAppRscRequest<TRoute extends AppRscHandlerRoute>(
   //   "should have the canonical url pathname on rewrite"
   const canonicalPathname = cleanPathname;
 
+  // The request reached this point so it was either under basePath (stripped
+  // by normalizeRscRequest) or basePath is empty. In both cases the matcher
+  // gating below treats default (basePath: true) rules as eligible. The App
+  // Router does not yet support `basePath: false` rules — they would need a
+  // pre-strip hook in normalizeRscRequest to fire. Tracked as follow-up to
+  // issue #1333.
+  const basePathState = { basePath: options.basePath, hadBasePath: true };
+
   const prerenderEndpointResponse = await handleAppPrerenderEndpoint(request, {
     isPrerenderEnabled() {
       return process.env.VINEXT_PRERENDER === "1";
@@ -334,6 +355,7 @@ async function handleAppRscRequest<TRoute extends AppRscHandlerRoute>(
     redirectPathname,
     options.configRedirects,
     preMiddlewareRequestContext,
+    basePathState,
   );
   if (redirect) {
     const destination = sanitizeDestination(
@@ -374,6 +396,7 @@ async function handleAppRscRequest<TRoute extends AppRscHandlerRoute>(
     });
     if (middlewareResult.kind === "response") {
       return applyConfigHeadersToMiddlewareRedirect(middlewareResult.response, {
+        basePathState,
         configHeaders: options.configHeaders,
         pathname: cleanPathname,
         requestContext: preMiddlewareRequestContext,
@@ -391,6 +414,7 @@ async function handleAppRscRequest<TRoute extends AppRscHandlerRoute>(
 
   const beforeFilesRewrite = await applyRewrite(
     {
+      basePathState,
       clearRequestContext: options.clearRequestContext,
       request,
       requestContext: postMiddlewareRequestContext,
@@ -474,6 +498,7 @@ async function handleAppRscRequest<TRoute extends AppRscHandlerRoute>(
   if (!match || match.route.isDynamic) {
     const afterFilesRewrite = await applyRewrite(
       {
+        basePathState,
         clearRequestContext: options.clearRequestContext,
         request,
         requestContext: postMiddlewareRequestContext,
@@ -491,6 +516,7 @@ async function handleAppRscRequest<TRoute extends AppRscHandlerRoute>(
   if (!match) {
     const fallbackRewrite = await applyRewrite(
       {
+        basePathState,
         clearRequestContext: options.clearRequestContext,
         request,
         requestContext: postMiddlewareRequestContext,
