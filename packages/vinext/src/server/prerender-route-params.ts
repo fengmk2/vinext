@@ -9,7 +9,8 @@ export type PrerenderRouteParamsPayload = {
   routePattern: string;
 };
 
-type PrerenderRouteParamsRouteMatch =
+/** @public exported for #1716 serving consumers; not yet referenced in-repo */
+export type PrerenderRouteParamsRouteMatch =
   | {
       kind: "exact";
       params: PrerenderRouteParams;
@@ -145,7 +146,7 @@ export function prerenderRouteParamsPayloadMatchesRoute(
   return match?.kind === "exact";
 }
 
-function matchPrerenderRouteParamsPayload(
+export function matchPrerenderRouteParamsPayload(
   payload: PrerenderRouteParamsPayload | null,
   routePattern: string,
   params: PrerenderRouteParams,
