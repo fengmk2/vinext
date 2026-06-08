@@ -351,6 +351,8 @@ export type ResolvedNextConfig = {
   inlineCss: boolean;
   /** Parsed body size limit for server actions in bytes (from experimental.serverActions.bodySizeLimit). Defaults to 1MB. */
   serverActionsBodySizeLimit: number;
+  /** Verbatim body size limit config value (e.g. "2mb") for the "Body exceeded {limit} limit" error. Defaults to "1 MB". */
+  serverActionsBodySizeLimitLabel: string;
   /** Route-level expire fallback in seconds for ISR entries with numeric revalidate. */
   expireTime: number;
   /** Serialized htmlLimitedBots regexp source from next.config. */
@@ -1184,6 +1186,7 @@ export async function resolveNextConfig(
       optimizePackageImports: [],
       inlineCss: false,
       serverActionsBodySizeLimit: 1 * 1024 * 1024,
+      serverActionsBodySizeLimitLabel: "1 MB",
       expireTime: DEFAULT_EXPIRE_TIME,
       htmlLimitedBots: undefined,
       serverExternalPackages: [],
@@ -1278,9 +1281,19 @@ export async function resolveNextConfig(
   const experimental = readOptionalRecord(config.experimental);
   const serverActionsConfig = readOptionalRecord(experimental?.serverActions);
   const serverActionsAllowedOrigins = readStringArray(serverActionsConfig?.allowedOrigins);
-  const serverActionsBodySizeLimit = parseBodySizeLimit(
-    readOptionalBodySizeLimit(serverActionsConfig?.bodySizeLimit),
+  const serverActionsBodySizeLimitConfig = readOptionalBodySizeLimit(
+    serverActionsConfig?.bodySizeLimit,
   );
+  const serverActionsBodySizeLimit = parseBodySizeLimit(serverActionsBodySizeLimitConfig);
+  // Preserve the verbatim config value (e.g. "2mb") for the "Body exceeded
+  // {limit} limit" error message. Next.js surfaces the original string rather
+  // than a value reconstructed from the parsed byte count, so reusing it keeps
+  // the error/log text byte-identical. When unset, Next.js uses its
+  // `defaultBodySizeLimit = '1 MB'` literal (uppercase, spaced) — mirror it.
+  const serverActionsBodySizeLimitLabel =
+    serverActionsBodySizeLimitConfig === undefined
+      ? "1 MB"
+      : String(serverActionsBodySizeLimitConfig);
 
   // Resolve hashSalt from experimental.outputHashSalt config + NEXT_HASH_SALT env var.
   // Next.js concatenates them: config value first, then env var.
@@ -1455,6 +1468,7 @@ export async function resolveNextConfig(
     optimizePackageImports,
     inlineCss,
     serverActionsBodySizeLimit,
+    serverActionsBodySizeLimitLabel,
     expireTime: typeof config.expireTime === "number" ? config.expireTime : DEFAULT_EXPIRE_TIME,
     htmlLimitedBots,
     serverExternalPackages,
