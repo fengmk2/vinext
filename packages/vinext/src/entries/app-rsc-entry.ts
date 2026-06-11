@@ -653,6 +653,7 @@ export default __createAppRscHandler({
       },
       clientReuseManifest,
       cleanPathname,
+      displayPathname,
       clearRequestContext() {
         __clearRequestContext();
       },

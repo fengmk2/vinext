@@ -182,6 +182,7 @@ function createCommonOptions() {
         headers: null,
         status: null,
       },
+      navigationParams: { slug: "post" },
       params: { slug: "post" },
       probeLayoutAt() {
         return null;
@@ -1160,6 +1161,7 @@ describe("layoutFlags injection into RSC payload", () => {
       layoutCount: overrides.layoutCount ?? 0,
       loadSsrHandler: vi.fn(),
       middlewareContext: { headers: null, status: null },
+      navigationParams: {},
       params: {},
       probeLayoutAt: overrides.probeLayoutAt ?? (() => null),
       probePage: () => null,
@@ -1284,6 +1286,7 @@ describe("layoutFlags injection into RSC payload", () => {
 
     await renderAppPageLifecycle({
       ...options,
+      navigationParams: { id: "123" },
       params: { id: "123" },
       peekRenderObservationState() {
         return {

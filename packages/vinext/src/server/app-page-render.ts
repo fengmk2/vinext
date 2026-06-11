@@ -151,6 +151,7 @@ type RenderAppPageLifecycleOptions = {
   layoutCount: number;
   loadSsrHandler: () => Promise<AppPageSsrHandler>;
   middlewareContext: AppPageMiddlewareContext;
+  navigationParams: Record<string, unknown>;
   params: Record<string, unknown>;
   rootParams?: RootParams;
   peekRenderObservationState?: () => AppPageRenderObservationState;
@@ -629,7 +630,7 @@ export async function renderAppPageLifecycle(
     cleanPathname: options.cleanPathname,
     completeness: "partial",
     output: rscOutputScope,
-    params: options.params,
+    params: options.navigationParams,
     state: options.peekRenderObservationState?.() ?? createEmptyAppPageRenderObservationState(),
   });
   const skipDisposition =
@@ -737,7 +738,7 @@ export async function renderAppPageLifecycle(
       isEdgeRuntime: options.isEdgeRuntime,
       middlewareContext: options.middlewareContext,
       mountedSlotsHeader: options.mountedSlotsHeader,
-      params: options.params,
+      params: options.navigationParams,
       policy: rscResponsePolicy,
       timing: buildResponseTiming({
         compileEnd,
@@ -778,7 +779,7 @@ export async function renderAppPageLifecycle(
           cleanPathname: options.cleanPathname,
           completeness: "complete",
           output: rscOutputScope,
-          params: options.params,
+          params: options.navigationParams,
           state: input.state,
         });
       },
@@ -972,7 +973,7 @@ export async function renderAppPageLifecycle(
           cleanPathname: options.cleanPathname,
           completeness: "complete",
           output: htmlOutputScope,
-          params: options.params,
+          params: options.navigationParams,
           state: input.state,
         });
       },
@@ -984,7 +985,7 @@ export async function renderAppPageLifecycle(
           cleanPathname: options.cleanPathname,
           completeness: "complete",
           output: rscOutputScope,
-          params: options.params,
+          params: options.navigationParams,
           state: input.state,
         });
       },
