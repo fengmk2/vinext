@@ -112,11 +112,7 @@ import {
   pagesRouteHasPriorityOverAppRoute,
   validateHybridRouteConflicts,
 } from "./server/hybrid-route-priority.js";
-import {
-  matchRewrite,
-  proxyExternalRequest,
-  requestContextFromRequest,
-} from "./config/config-matchers.js";
+import { matchesRewriteSource, proxyExternalRequest } from "./config/config-matchers.js";
 import { detectPackageManager } from "./utils/project.js";
 import { isUnknownRecord as isRecord } from "./utils/record.js";
 import { ASSET_PREFIX_URL_DIR, resolveAssetsDir } from "./utils/asset-prefix.js";
@@ -3756,32 +3752,15 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
               // Skip requests for files with extensions (static assets) after
               // trailing-slash canonicalization so file-looking dynamic routes
               // like /catch-all/hello.world/ still get the Next.js redirect.
-              const rewriteContextHeaders = new Headers();
-              for (const [key, value] of Object.entries(req.headers)) {
-                if (value === undefined || key.startsWith(":")) continue;
-                if (Array.isArray(value)) {
-                  for (const item of value) rewriteContextHeaders.append(key, item);
-                } else {
-                  rewriteContextHeaders.set(key, value);
-                }
-              }
-              const rewriteContextRequest = new Request(
-                new URL(url, `http://${req.headers.host ?? "localhost"}`),
-                {
-                  headers: rewriteContextHeaders,
-                },
-              );
-              const rewriteRequestContext = requestContextFromRequest(rewriteContextRequest);
               const filePathMatchesRewrite = [
                 ...(nextConfig?.rewrites.beforeFiles ?? []),
                 ...(nextConfig?.rewrites.afterFiles ?? []),
                 ...(nextConfig?.rewrites.fallback ?? []),
-              ].some(
-                (rewrite) =>
-                  matchRewrite(pathname, [rewrite], rewriteRequestContext, {
-                    basePath: bp,
-                    hadBasePath: true,
-                  }) !== null,
+              ].some((rewrite) =>
+                matchesRewriteSource(pathname, rewrite, {
+                  basePath: bp,
+                  hadBasePath: true,
+                }),
               );
               if (
                 pathname.includes(".") &&
@@ -3983,8 +3962,8 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
                 return next();
               }
 
-              // The dev static adapter returns a Response rather than writing directly,
-              // so `handled` remains a Node-production-only result here.
+              // `handled` means an adapter wrote the response directly, including
+              // Vite's filesystem middleware for rewritten public/static files.
               if (pipelineResult.type === "handled") {
                 return;
               }
