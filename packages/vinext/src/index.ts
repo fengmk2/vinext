@@ -184,7 +184,6 @@ import {
 } from "./build/ssr-manifest.js";
 import {
   hasExportAllCandidate,
-  hasServerExportCandidate,
   stripServerExports,
   validatePageExports,
 } from "./plugins/strip-server-exports.js";
@@ -1155,10 +1154,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
             transform: {
               filter: { id: /\.m?js(?:\?.*)?$/ },
               async handler(code: string, id: string) {
-                // Only handle .js/.mjs files.
-                // TypeScript (.ts/.tsx/.jsx) files are handled by vite:oxc.
                 const cleanId = id.split("?")[0];
-                if (!/\.(m?js)$/.test(cleanId)) return;
 
                 // Inside node_modules, restrict the JSX transform to files that
                 // carry a React directive. `@vitejs/plugin-rsc` only parses
@@ -3162,25 +3158,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
           },
           code: /import\s*\{[^}]*(ViewTransition|addTransitionType)[^}]*\}\s*from\s*['"]react['"]/,
         },
-        handler(code, id) {
-          // Only transform user source files, not node_modules or virtual modules
-          if (id.includes("node_modules")) return null;
-          if (id.startsWith(VIRTUAL_PREFIX)) return null;
-          if (!/\.(tsx?|jsx?|mjs)$/.test(id)) return null;
-
-          // Quick check: does this file reference canary APIs and import from "react"?
-          if (
-            !(code.includes("ViewTransition") || code.includes("addTransitionType")) ||
-            !/from\s+['"]react['"]/.test(code)
-          ) {
-            return null;
-          }
-
-          // Only rewrite if the import actually destructures a canary API
-          const canaryImportRegex =
-            /import\s*\{[^}]*(ViewTransition|addTransitionType)[^}]*\}\s*from\s*['"]react['"]/;
-          if (!canaryImportRegex.test(code)) return null;
-
+        handler(code) {
           // Rewrite all `from "react"` / `from 'react'` to use the canary shim.
           // This is safe because the virtual module re-exports everything from
           // react, so non-canary imports continue to work.
@@ -3188,10 +3166,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
             /from\s*['"]react['"]/g,
             'from "virtual:vinext-react-canary"',
           );
-          if (result !== code) {
-            return { code: result, map: null };
-          }
-          return null;
+          return { code: result, map: null };
         },
       },
     },
@@ -4259,7 +4234,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
         },
         handler(code, id) {
           if (this.environment?.name !== "client") return null;
-          if (!hasPagesDir || id.startsWith(VIRTUAL_PREFIX) || !hasExportAllCandidate(code)) {
+          if (!hasPagesDir || !hasExportAllCandidate(code)) {
             return null;
           }
           const modulePath = stripViteModuleQuery(id);
@@ -4290,9 +4265,7 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
         },
         handler(code, id) {
           if (this.environment?.name !== "client") return null;
-          if (!hasPagesDir || id.startsWith(VIRTUAL_PREFIX) || !hasServerExportCandidate(code)) {
-            return null;
-          }
+          if (!hasPagesDir) return null;
           // Only transform files under the pages/ directory
           const modulePath = stripViteModuleQuery(id);
           if (!isWithinPagesDirectory(modulePath)) return null;
@@ -4321,10 +4294,15 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
     {
       name: "vinext:validate-server-only-client-imports",
       transform: {
-        filter: { id: /\.(tsx?|jsx?|mjs)$/, code: "server-only" },
-        handler(code, id) {
+        filter: {
+          id: {
+            include: /\.(tsx?|jsx?|mjs)$/,
+            exclude: VIRTUAL_MODULE_ID_RE,
+          },
+          code: "server-only",
+        },
+        handler(code) {
           if (this.environment?.name !== "client") return null;
-          if (id.startsWith(VIRTUAL_PREFIX)) return null;
           if (getLeadingReactDirective(code) === "use server") return null;
           if (!hasServerOnlyMarkerImport(code)) return null;
 
@@ -4354,16 +4332,10 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
           },
           code: /\bconsole\b/,
         },
-        handler(code, id) {
+        handler(code) {
           const ssr = this.environment?.name !== "client";
           if (ssr) return null;
           if (!nextConfig.removeConsole) return null;
-          // Skip node_modules to avoid transform overhead on application
-          // dependencies. Next.js applies removeConsole to node_modules too
-          // (the SWC option in getBaseSWCOptions runs on every file the SWC
-          // loader processes); this is a minor divergence in exchange for
-          // faster builds.
-          if (id.includes("/node_modules/")) return null;
 
           const result = removeConsoleCalls(code, nextConfig.removeConsole);
           if (!result) return null;
@@ -4531,16 +4503,11 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
         filter: {
           id: {
             include: /\.(tsx?|jsx?|mjs)$/,
-            exclude: /node_modules/,
+            exclude: [/node_modules/, VIRTUAL_MODULE_ID_RE],
           },
           code: new RegExp(`import\\s+\\w+\\s+from\\s+['"][^'"]+\\.(${IMAGE_EXTS})['"]`),
         },
         async handler(code, id) {
-          // Defensive guard — duplicates filter logic
-          if (id.includes("node_modules")) return null;
-          if (id.startsWith(VIRTUAL_PREFIX)) return null;
-          if (!id.match(/\.(tsx?|jsx?|mjs)$/)) return null;
-
           // The `code` filter above (a regex) only decides whether to invoke
           // this handler; it can fire on text inside comments, strings, or
           // template literals. Scanning must therefore be AST-based so we only
@@ -4703,19 +4670,13 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
         filter: {
           id: {
             include: /\.(tsx?|jsx?|mjs)$/,
-            exclude: /node_modules/,
+            exclude: [/node_modules/, VIRTUAL_MODULE_ID_RE],
           },
           code: "use cache",
         },
         async handler(code, id) {
-          // Defensive guard — duplicates filter logic
-          if (id.includes("node_modules")) return null;
-          if (id.startsWith(VIRTUAL_PREFIX)) return null;
-          if (!id.match(/\.(tsx?|jsx?|mjs)$/)) return null;
-          if (!code.includes("use cache")) return null;
-
           // Parse the AST first to check for actual "use cache" directives before
-          // throwing the missing-RSC error. The fast-path string check above can
+          // throwing the missing-RSC error. The code filter can
           // fire on files that contain "use cache" only in comments or string
           // literals (e.g., in error messages), not as real directives.
           const ast = parseAst(code);
@@ -5435,7 +5396,6 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
       transform: {
         filter: { id: /@vercel\/og.*index\.edge\.js/ },
         handler(code: string, id: string) {
-          if (!id.includes("@vercel/og") || !id.includes("index.edge.js")) return null;
           let result = code;
 
           // ── Yoga WASM: dynamic import + disk-read fallback ──────────────────────────
