@@ -544,14 +544,19 @@ export function createSSRHandler(
 
     if (!match) {
       if (isDataReq) {
-        // Stale client requested data for a page that no longer exists.
-        // Emit a JSON 404 so the client hard-navigates (matches Next.js).
+        // Middleware data misses use Next.js's soft-miss protocol so the
+        // client router can distinguish them from stale-build deployment skew.
+        // Without middleware, preserve the JSON 404 hard-navigation response.
         // Mirror Next.js pages-handler.ts: set x-nextjs-deployment-id on
         // `_next/data` notFound exits for deployment-skew protection. Fixes #1829.
         const deploymentId = process.env.__VINEXT_DEPLOYMENT_ID || process.env.NEXT_DEPLOYMENT_ID;
         const notFoundHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (hasMiddleware) {
+          notFoundHeaders["x-nextjs-matched-path"] =
+            `${locale ? `/${locale}` : ""}${localeStrippedUrl}`;
+        }
         if (deploymentId) notFoundHeaders[NEXTJS_DEPLOYMENT_ID_HEADER] = deploymentId;
-        res.writeHead(404, notFoundHeaders);
+        res.writeHead(hasMiddleware ? 200 : 404, notFoundHeaders);
         res.end("{}");
         return;
       }
@@ -1442,6 +1447,10 @@ export function createSSRHandler(
           const dataHeaders: Record<string, string | string[] | number> = {
             "Content-Type": "application/json",
           };
+          if ((statusCode ?? 200) === 200) {
+            const matchedPathname = `${locale ? `/${locale}` : ""}${patternToNextFormat(route.pattern)}`;
+            dataHeaders["x-nextjs-matched-path"] = matchedPathname;
+          }
           if (gsspExtraHeaders) {
             for (const [k, v] of Object.entries(gsspExtraHeaders)) {
               dataHeaders[k] = v;
