@@ -156,7 +156,7 @@ async function buildAndServeHashRscFixture(): Promise<ProductionApp> {
   const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "vinext-hash-rsc-"));
   await writeHashRscFixture(fixtureRoot);
 
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const builder = await createBuilder({
     root: fixtureRoot,
     configFile: path.join(fixtureRoot, "vite.config.ts"),

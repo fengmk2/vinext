@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vite-plus/test";
-import type { Plugin } from "vite";
+import type { Plugin } from "vite-plus";
 import vinext from "../packages/vinext/src/index.js";
 import {
   extractPackageName,

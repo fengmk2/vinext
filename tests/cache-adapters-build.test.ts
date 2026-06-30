@@ -13,7 +13,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createBuilder } from "vite";
+import { createBuilder } from "vite-plus";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 
@@ -28,7 +28,7 @@ const cfPluginPath = path.resolve(
 
 type CloudflarePluginFactory = (opts?: {
   viteEnvironment?: { name: string; childEnvironments?: string[] };
-}) => import("vite").Plugin;
+}) => import("vite-plus").Plugin;
 
 function writeFixtureFile(root: string, filePath: string, content: string) {
   const absPath = path.join(root, filePath);

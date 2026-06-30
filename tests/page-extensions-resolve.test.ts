@@ -1,7 +1,7 @@
 import path from "node:path";
 import os from "node:os";
 import fs from "node:fs/promises";
-import { createBuilder, resolveConfig } from "vite";
+import { createBuilder, resolveConfig } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
 import {
   buildViteResolveExtensions,

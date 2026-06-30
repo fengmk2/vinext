@@ -382,7 +382,7 @@ module.exports.postcss = true;`,
     );
 
     // Create a Vite server to test the resolved config
-    const { createServer } = await import("vite");
+    const { createServer } = await import("vite-plus");
     const vinext = (await import("../packages/vinext/src/index.js")).default;
 
     const server = await createServer({
@@ -410,7 +410,7 @@ module.exports.postcss = true;`,
     // Ported from Next.js: test/e2e/app-dir/css-modules-rsc-postcss/css-modules-rsc-postcss.test.ts
     // https://github.com/vercel/next.js/blob/canary/test/e2e/app-dir/css-modules-rsc-postcss/css-modules-rsc-postcss.test.ts
     const fsp = await import("node:fs/promises");
-    const { build } = await import("vite");
+    const { build } = await import("vite-plus");
     const vinext = (await import("../packages/vinext/src/index.js")).default;
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "vinext-css-modules-rsc-postcss-"));
     const rootNodeModules = path.resolve(import.meta.dirname, "../node_modules");

@@ -25,7 +25,7 @@ import { describe, it, expect, afterAll } from "vite-plus/test";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { build, createBuilder } from "vite";
+import { build, createBuilder } from "vite-plus";
 import vinext from "../packages/vinext/src/index.js";
 import {
   isAbsoluteAssetPrefix,

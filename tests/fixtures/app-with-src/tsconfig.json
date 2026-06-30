@@ -6,7 +6,7 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "types": ["vite/client", "@vitejs/plugin-rsc/types"]
+    "types": ["vite-plus/client", "@vitejs/plugin-rsc/types"]
   },
   "include": ["src", "*.ts", "../../../packages/vinext/src/shims/next-shims.d.ts"]
 }

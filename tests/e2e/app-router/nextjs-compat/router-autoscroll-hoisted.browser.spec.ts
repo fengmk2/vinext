@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { expect, test } from "@playwright/test";
-import type { ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite-plus";
 import { waitForAppRouterHydration } from "../../helpers";
 
 async function linkFixtureNodeModules(fixtureRoot: string): Promise<void> {
@@ -92,7 +92,7 @@ async function startHoistedScrollFixture(): Promise<{
   const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "vinext-hoisted-scroll-"));
   await writeHoistedScrollFixture(fixtureRoot);
 
-  const { createServer } = await import("vite");
+  const { createServer } = await import("vite-plus");
   const server = await createServer({
     root: fixtureRoot,
     configFile: path.join(fixtureRoot, "vite.config.ts"),

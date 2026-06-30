@@ -10,8 +10,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createBuilder, createServer } from "vite";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createBuilder, createServer } from "vite-plus";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 import { APP_FIXTURE_DIR } from "./helpers.js";
 
@@ -154,7 +154,7 @@ describe("favicon short-circuit", () => {
 
   describe("production - no user favicon route", () => {
     let tmpDir: string;
-    let previewServer: Awaited<ReturnType<typeof import("vite").preview>>;
+    let previewServer: Awaited<ReturnType<typeof import("vite-plus").preview>>;
     let previewUrl: string;
 
     beforeAll(async () => {
@@ -171,7 +171,7 @@ describe("favicon short-circuit", () => {
       });
       await builder.buildApp();
 
-      const { preview } = await import("vite");
+      const { preview } = await import("vite-plus");
       previewServer = await preview({
         root: tmpDir,
         configFile: false,
@@ -201,7 +201,7 @@ describe("favicon short-circuit", () => {
 
   describe("production - user has app/favicon.ico/route.ts", () => {
     let tmpDir: string;
-    let previewServer: Awaited<ReturnType<typeof import("vite").preview>>;
+    let previewServer: Awaited<ReturnType<typeof import("vite-plus").preview>>;
     let previewUrl: string;
 
     beforeAll(async () => {
@@ -224,7 +224,7 @@ describe("favicon short-circuit", () => {
       });
       await builder.buildApp();
 
-      const { preview } = await import("vite");
+      const { preview } = await import("vite-plus");
       previewServer = await preview({
         root: tmpDir,
         configFile: false,
@@ -254,7 +254,7 @@ describe("favicon short-circuit", () => {
 
   describe("production - existing metadata favicon.ico file takes priority", () => {
     let tmpDir: string;
-    let previewServer: Awaited<ReturnType<typeof import("vite").preview>>;
+    let previewServer: Awaited<ReturnType<typeof import("vite-plus").preview>>;
     let previewUrl: string;
 
     beforeAll(async () => {
@@ -269,7 +269,7 @@ describe("favicon short-circuit", () => {
       });
       await builder.buildApp();
 
-      const { preview } = await import("vite");
+      const { preview } = await import("vite-plus");
       previewServer = await preview({
         root: tmpDir,
         configFile: false,

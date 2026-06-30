@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { type ViteDevServer } from "vite";
-import { beforeAll, afterAll, describe, expect, it } from "vitest";
+import { type ViteDevServer } from "vite-plus";
+import { beforeAll, afterAll, describe, expect, it } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 import { APP_FIXTURE_DIR, fetchHtml, RSC_ENTRIES } from "./helpers.js";
 
@@ -15,7 +15,7 @@ describe("RSC plugin auto-registration", () => {
     // The plugin should auto-detect the app/ directory and inject RSC.
     // Note: appDir is passed because process.cwd() differs from root in tests.
     // In real projects, cwd === root so appDir is not needed.
-    const { createServer } = await import("vite");
+    const { createServer } = await import("vite-plus");
     server = await createServer({
       root: APP_FIXTURE_DIR,
       configFile: false,
@@ -50,7 +50,7 @@ describe("RSC plugin auto-registration", () => {
   });
 
   it("serves the browser bootstrap in dev when deploymentId is configured", async () => {
-    const { createServer } = await import("vite");
+    const { createServer } = await import("vite-plus");
     const deploymentServer = await createServer({
       root: APP_FIXTURE_DIR,
       configFile: false,
@@ -84,7 +84,7 @@ describe("RSC plugin auto-registration", () => {
   }, 30_000);
 
   it("does not double-register when RSC plugin is already present", async () => {
-    const { createServer } = await import("vite");
+    const { createServer } = await import("vite-plus");
     const rsc = (await import("@vitejs/plugin-rsc")).default;
 
     // Create a server with BOTH vinext({ rsc: false }) and explicit rsc().
@@ -112,7 +112,7 @@ describe("RSC plugin auto-registration", () => {
   }, 30000);
 
   it("throws an error when user double-registers rsc() alongside auto-registration", async () => {
-    const { createBuilder } = await import("vite");
+    const { createBuilder } = await import("vite-plus");
     const rsc = (await import("@vitejs/plugin-rsc")).default;
 
     // vinext() auto-registers @vitejs/plugin-rsc when app/ is detected.

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { build, type ViteDevServer } from "vite";
+import { describe, it, expect, beforeAll, afterAll } from "vite-plus/test";
+import { build, type ViteDevServer } from "vite-plus";
 import path from "node:path";
 import http from "node:http";
 import vinext from "../packages/vinext/src/index.js";

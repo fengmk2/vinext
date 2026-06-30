@@ -151,7 +151,7 @@ export const config = { matcher: ["/"] };
   const { default: vinext } = await import(
     pathToFileURL(path.join(workspaceRoot, "packages/vinext/src/index.ts")).href
   );
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const rscOutDir = path.join(tmpDir, "dist", "server");
   const ssrOutDir = path.join(tmpDir, "dist", "server", "ssr");
   const clientOutDir = path.join(tmpDir, "dist", "client");
@@ -196,7 +196,7 @@ export default function Comp() {
   const { default: vinext } = await import(
     pathToFileURL(path.join(workspaceRoot, "packages/vinext/src/index.ts")).href
   );
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const rscOutDir = path.join(tmpDir, "dist", "server");
   const ssrOutDir = path.join(tmpDir, "dist", "server", "ssr");
   const clientOutDir = path.join(tmpDir, "dist", "client");
@@ -268,7 +268,7 @@ export default function Home() {
   const { default: vinext } = await import(
     pathToFileURL(path.join(workspaceRoot, "packages/vinext/src/index.ts")).href
   );
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const rscOutDir = path.join(tmpDir, "dist", "server");
   const ssrOutDir = path.join(tmpDir, "dist", "server", "ssr");
   const clientOutDir = path.join(tmpDir, "dist", "client");

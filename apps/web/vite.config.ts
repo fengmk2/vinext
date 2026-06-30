@@ -1,5 +1,5 @@
 import vinext from "vinext";
-import { defineConfig } from "vite";
+import { defineConfig } from "vite-plus";
 import { kvDataAdapter } from "@vinext/cloudflare/cache/kv-data-adapter";
 import { imageAdapter } from "@vinext/cloudflare/images/images-optimizer";
 import { cloudflare } from "@cloudflare/vite-plugin";

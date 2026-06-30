@@ -9,7 +9,7 @@ import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, it, expect, beforeEach, afterEach } from "vite-plus/test";
-import { createBuilder, parseAst } from "vite";
+import { createBuilder, parseAst } from "vite-plus";
 import { augmentSsrManifestFromBundle as _augmentSsrManifestFromBundle } from "../packages/vinext/src/build/ssr-manifest.js";
 import {
   hasExportAllCandidate as _hasExportAllCandidate,
