@@ -2806,6 +2806,10 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
                     "react/jsx-dev-runtime",
                   ]),
                 ],
+                // The client scanner also crawls app/ source files, so it
+                // needs the same JSX-in-`.js` handling (moduleTypes/loader) as
+                // the server optimizers. See getDepOptimizeNodeEnvOptions.
+                ...depOptimizeNodeEnvOptions,
               },
               build: {
                 // Production App Router rendering needs Vite's client manifest
@@ -2834,8 +2838,10 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
           viteConfig.environments = {
             client: {
               consumer: "client",
-              optimizeDeps:
-                pagesOptimizeEntries.length > 0 ? { entries: pagesOptimizeEntries } : undefined,
+              optimizeDeps: {
+                ...(pagesOptimizeEntries.length > 0 ? { entries: pagesOptimizeEntries } : {}),
+                ...depOptimizeNodeEnvOptions,
+              },
               build: {
                 manifest: true,
                 ssrManifest: true,
@@ -2860,8 +2866,10 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
           viteConfig.environments = {
             client: {
               consumer: "client",
-              optimizeDeps:
-                pagesOptimizeEntries.length > 0 ? { entries: pagesOptimizeEntries } : undefined,
+              optimizeDeps: {
+                ...(pagesOptimizeEntries.length > 0 ? { entries: pagesOptimizeEntries } : {}),
+                ...depOptimizeNodeEnvOptions,
+              },
               build: {
                 outDir: "dist/client",
                 manifest: true,
