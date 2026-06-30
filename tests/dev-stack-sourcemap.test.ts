@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PassThrough } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite-plus";
 import { describe, expect, it } from "vite-plus/test";
 import {
   decodeVlqSegment,

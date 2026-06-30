@@ -11,7 +11,7 @@ import http, { type IncomingHttpHeaders } from "node:http";
 import fs from "node:fs/promises";
 import os from "node:os";
 import { pathToFileURL } from "node:url";
-import { createServer, build, type ViteDevServer } from "vite";
+import { createServer, build, type ViteDevServer } from "vite-plus";
 import vinext from "../packages/vinext/src/index.js";
 import path from "node:path";
 
@@ -265,7 +265,7 @@ export async function buildAppFixture(fixtureDir: string): Promise<string> {
   const ssrOutDir = path.join(outDir, "server", "ssr");
   const clientOutDir = path.join(outDir, "client");
 
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const builder = await createBuilder({
     root: fixtureDir,
     configFile: false,
@@ -312,10 +312,10 @@ export async function buildCloudflareAppFixture(fixtureDir: string): Promise<{
   const { cloudflare } = (await import(pathToFileURL(cfPluginPath).href)) as unknown as {
     cloudflare: (opts?: {
       viteEnvironment?: { name: string; childEnvironments?: string[] };
-    }) => import("vite").Plugin;
+    }) => import("vite-plus").Plugin;
   };
 
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const builder = await createBuilder({
     root: tmpDir,
     configFile: false,

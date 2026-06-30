@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import type { ViteDevServer } from "vite";
+import { afterEach, describe, expect, it } from "vite-plus/test";
+import type { ViteDevServer } from "vite-plus";
 import { createIsolatedFixture, startFixtureServer } from "./helpers.js";
 
 const FIXTURE_DIR = path.resolve(import.meta.dirname, "./fixtures/proxy-conventions");

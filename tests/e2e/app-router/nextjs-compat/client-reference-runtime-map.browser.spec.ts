@@ -208,7 +208,7 @@ export default defineConfig({
 `,
   );
 
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   const builder = await createBuilder({
     root: fixtureRoot,
     configFile,

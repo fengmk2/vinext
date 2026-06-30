@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vite-plus/test";
-import { build, createBuilder } from "vite";
+import { build, createBuilder } from "vite-plus";
 import type { Server } from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -47,7 +47,7 @@ const WORKER_ENTRY_PATH = path
 
 type CloudflarePluginFactory = (options?: {
   viteEnvironment?: { name: string; childEnvironments?: string[] };
-}) => import("vite").Plugin;
+}) => import("vite-plus").Plugin;
 
 const MEDIA_SVG_RE = (name: string) =>
   new RegExp(`^/_next/static/media/${name}\\.[A-Za-z0-9_-]+\\.svg$`);
@@ -313,7 +313,7 @@ describe.each(["plain", "cloudflare"] as const)(
         undefined,
         path.join(CLOUDFLARE_FIXTURE_DIR, "node_modules"),
       );
-      const plugins: import("vite").PluginOption[] = [vinext({ appDir: tmpDir })];
+      const plugins: import("vite-plus").PluginOption[] = [vinext({ appDir: tmpDir })];
       if (buildTarget === "cloudflare") {
         await fs.mkdir(path.join(tmpDir, "worker"), { recursive: true });
         await fs.writeFile(

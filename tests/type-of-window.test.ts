@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { createBuilder, createServer } from "vite";
+import { createBuilder, createServer } from "vite-plus";
 import vinext from "../packages/vinext/src/index.js";
 import {
   getTypeofWindowReplacement,

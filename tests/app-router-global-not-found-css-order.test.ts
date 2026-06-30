@@ -38,8 +38,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createBuilder, preview } from "vite";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createBuilder, preview } from "vite-plus";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 
 const FIXTURE_DIR = path.resolve(import.meta.dirname, "./fixtures/global-not-found-css-order");

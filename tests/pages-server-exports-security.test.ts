@@ -10,7 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { createBuilder } from "vite";
+import { createBuilder } from "vite-plus";
 
 const CLIENT_SECRET = "VINEXT_CLIENT_BUNDLE_SECRET_SENTINEL_6f28d81e";
 let tmpDir: string;

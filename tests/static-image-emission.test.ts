@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import type { Server } from "node:http";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { build, createBuilder } from "vite";
+import { build, createBuilder } from "vite-plus";
 import { afterAll, describe, expect, it } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 import { startProdServer } from "../packages/vinext/src/server/prod-server.js";
@@ -27,7 +27,7 @@ const workerEntryPath = path
 
 type CloudflarePluginFactory = (options?: {
   viteEnvironment?: { name: string; childEnvironments?: string[] };
-}) => import("vite").Plugin;
+}) => import("vite-plus").Plugin;
 
 function writeFixtureFile(root: string, filePath: string, content: string | Buffer): void {
   const absolutePath = path.join(root, filePath);

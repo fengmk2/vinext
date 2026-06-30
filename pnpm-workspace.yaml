@@ -84,9 +84,9 @@ catalog:
   typescript: ^5.7.0
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
+  vite: npm:@voidzero-dev/vite-plus-core@0.0.0-commit.d31f7b6818544e8261b9ccce2374a5e32a8b666f
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.2.1
+  vite-plus: 0.0.0-commit.d31f7b6818544e8261b9ccce2374a5e32a8b666f
   vite-tsconfig-paths: ^6.1.1
   vitest: 4.1.9
   web-vitals: ^4.2.4
@@ -102,8 +102,10 @@ overrides:
 peerDependencyRules:
   allowAny:
     - vite
+    - vitest
   allowedVersions:
     vite: "*"
+    vitest: "*"
   ignoreMissing:
     - next
     - webpack
@@ -131,3 +133,14 @@ allowBuilds:
   # MSW's postinstall only copies a service worker into ./public for browser
   # mocking. We exclusively use msw/node, so the postinstall is unnecessary.
   msw: false
+minimumReleaseAgeExclude:
+  - vite-plus
+  - "@voidzero-dev/*"
+  - oxlint
+  - "@oxlint/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - oxfmt
+  - "@oxfmt/*"
+  - vitest
+  - "@vitest/*"

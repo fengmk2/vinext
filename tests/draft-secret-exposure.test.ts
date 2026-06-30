@@ -2,11 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createBuilder } from "vite";
+import { createBuilder } from "vite-plus";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 import { APP_FIXTURE_DIR, startFixtureServer } from "./helpers.js";
-import type { ViteDevServer } from "vite";
+import type { ViteDevServer } from "vite-plus";
 
 const DRAFT_SECRET_DEFINE = "process.env.__VINEXT_DRAFT_SECRET";
 const UUID_PATTERN = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;

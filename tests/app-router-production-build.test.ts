@@ -2,8 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createBuilder } from "vite";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { createBuilder } from "vite-plus";
+import { afterAll, describe, expect, it, vi } from "vite-plus/test";
 import vinext from "../packages/vinext/src/index.js";
 import { APP_FIXTURE_DIR } from "./helpers.js";
 
@@ -473,7 +473,7 @@ export function GET(request) {
   }, 120000);
 
   it("serves production build via preview server", async () => {
-    const { preview } = await import("vite");
+    const { preview } = await import("vite-plus");
 
     const previewServer = await preview({
       root: APP_FIXTURE_DIR,

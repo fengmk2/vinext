@@ -30,7 +30,7 @@ import { describe, it, expect } from "vite-plus/test";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import { resolveConfig, createBuilder, type ResolvedConfig } from "vite";
+import { resolveConfig, createBuilder, type ResolvedConfig } from "vite-plus";
 import vinext from "../packages/vinext/src/index.js";
 
 const ROOT_NODE_MODULES = path.resolve(import.meta.dirname, "../node_modules");

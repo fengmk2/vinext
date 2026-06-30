@@ -230,7 +230,7 @@ export default function ForceStaticLayout({ children }) {
   const { default: vinext } = await import(
     pathToFileURL(path.join(workspaceRoot, "packages/vinext/src/index.ts")).href
   );
-  const { createBuilder } = await import("vite");
+  const { createBuilder } = await import("vite-plus");
   // No minify override: build with vinext's production defaults, which minify
   // the server environments (vinext:server-minify-defaults). The assertions
   // below are minify-robust by design — see the file header.
