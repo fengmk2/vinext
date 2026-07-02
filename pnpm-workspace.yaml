@@ -87,9 +87,9 @@ catalog:
   typescript: ^5.7.0
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
+  vite: npm:@voidzero-dev/vite-plus-core@0.0.0-commit.3ee9ab747ff7ab00c71b1b5ab9b3a4794f4aa9ef
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.2.1
+  vite-plus: 0.0.0-commit.3ee9ab747ff7ab00c71b1b5ab9b3a4794f4aa9ef
   vite-tsconfig-paths: ^6.1.1
   vitest: 4.1.9
   web-vitals: ^4.2.4
@@ -105,8 +105,10 @@ overrides:
 peerDependencyRules:
   allowAny:
     - vite
+    - vitest
   allowedVersions:
     vite: "*"
+    vitest: "*"
   ignoreMissing:
     - next
     - webpack
@@ -137,3 +139,14 @@ allowBuilds:
   # @sentry/nextjs pulls in @sentry/cli for source-map upload tooling. The
   # tests only exercise the runtime SDK, so the CLI postinstall is unnecessary.
   "@sentry/cli": false
+minimumReleaseAgeExclude:
+  - vite-plus
+  - "@voidzero-dev/*"
+  - oxlint
+  - "@oxlint/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - oxfmt
+  - "@oxfmt/*"
+  - vitest
+  - "@vitest/*"
