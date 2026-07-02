@@ -1,9 +1,25 @@
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - vite-plus
+  - "@voidzero-dev/*"
+  - "@oxc-project/*"
+  - "@oxlint/*"
+  - "@oxfmt/*"
+  - "@oxlint-tsgolint/*"
+  - "@rolldown/*"
+  - "@tsdown/*"
+  - oxlint
+  - oxfmt
+  - oxlint-tsgolint
+  - tsdown
+  - rolldown
+  - vitest
+  - "@vitest/*"
 autoInstallPeers: false
 frozenLockfile: true
 preferFrozenLockfile: true
 saveExact: true
 blockExoticSubdeps: true
-minimumReleaseAge: 1440
 
 packages:
   - apps/*
@@ -87,9 +103,9 @@ catalog:
   typescript: ^5.7.0
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.1
+  vite: npm:@voidzero-dev/vite-plus-core@0.0.0-commit.1d7ba811f0e456640b0e761e8e8acf77d1ad3251
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.2.1
+  vite-plus: 0.0.0-commit.1d7ba811f0e456640b0e761e8e8acf77d1ad3251
   vite-tsconfig-paths: ^6.1.1
   vitest: 4.1.9
   web-vitals: ^4.2.4
@@ -105,8 +121,10 @@ overrides:
 peerDependencyRules:
   allowAny:
     - vite
+    - vitest
   allowedVersions:
     vite: "*"
+    vitest: "*"
   ignoreMissing:
     - next
     - webpack
