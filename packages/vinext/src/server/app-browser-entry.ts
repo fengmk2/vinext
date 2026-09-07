@@ -1290,14 +1290,12 @@ function BrowserRoot({
     throw unresolvedMpaNavigation;
   }
   const treeState = isRouterStatePromise(treeStateValue) ? use(treeStateValue) : treeStateValue;
-  // Keep the latest router state in a ref so external callers (navigate(),
-  // server actions, HMR) always read the current state. Safe: those readers
-  // run from events/effects, never from React render itself.
-  // Note: stateRef.current is written during render, not in an effect, to
-  // avoid a stale-read window between commit and layout effects. This mirrors
-  // the same render-phase ref update pattern used by Next.js's own router.
+  // Keep the latest committed router state in a ref so external callers
+  // (navigate(), server actions, HMR) always read the current state.
   const stateRef = useRef(treeState);
-  stateRef.current = treeState;
+  useLayoutEffect(() => {
+    stateRef.current = treeState;
+  }, [treeState]);
 
   // Publish the stable ref object and dispatch during layout commit. This keeps
   // the module-level escape hatches aligned with React's committed tree without

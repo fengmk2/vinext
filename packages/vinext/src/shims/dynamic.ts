@@ -52,6 +52,9 @@ type DynamicInput<P> = DynamicOptions<P> | Loader<P>;
 type VinextLoadableModules = string[] | ((this: void) => LoaderMap);
 
 const noopRetry = () => {};
+const subscribeToClientReady = () => noopRetry;
+const getClientReady = () => true;
+const getServerNotReady = () => false;
 
 function createDynamicLoadingProps(
   overrides: Partial<DynamicOptionsLoadingProps> = {},
@@ -242,13 +245,15 @@ function dynamic<P = {}>(
     const InitialLazyComponent = createLazyComponent(loader);
 
     const ClientSSRFalse = (props: P) => {
-      const [mounted, setMounted] = React.useState(false);
+      const mounted = React.useSyncExternalStore(
+        subscribeToClientReady,
+        getClientReady,
+        getServerNotReady,
+      );
       const { LazyComponent, retry, retryKey } = useRetryableLazyComponent(
         loader,
         InitialLazyComponent,
       );
-      React.useEffect(() => setMounted(true), []);
-
       if (!mounted) {
         return LoadingComponent
           ? React.createElement(LoadingComponent, createDynamicLoadingProps({ retry }))
