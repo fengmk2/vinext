@@ -9,12 +9,8 @@ export default defineConfig({
   pack: {
     entry: ["src/**/*.ts", "src/**/*.tsx", "!src/**/*.d.ts"],
     clean: true,
-    deps: {
-      neverBundle: true,
-    },
-    dts: {
-      tsgo: { path: getTscPath() },
-    },
+    deps: { resolveDepSubpath: true, neverBundle: true },
+    dts: { generator: "tsgo", tsgo: { path: getTscPath() } },
     fixedExtension: false,
     format: "esm",
     tsconfig: "../../tsconfig.cloudflare-dts.json",

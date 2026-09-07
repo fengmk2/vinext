@@ -32,13 +32,12 @@ export default defineConfig({
     entry: ["src/**/*.ts", "!src/**/*.d.ts"],
     clean: true,
     deps: {
+      resolveDepSubpath: true,
       alwaysBundle: bundledDeps,
       neverBundle: (id) =>
         id.includes("node_modules") && !bundledDeps.some((dep) => id.includes(dep)),
     },
-    dts: {
-      tsgo: { path: getTscPath() },
-    },
+    dts: { generator: "tsgo", tsgo: { path: getTscPath() } },
     fixedExtension: false,
     format: "esm",
     inputOptions: {
