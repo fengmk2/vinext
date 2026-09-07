@@ -77,6 +77,7 @@ export default defineConfig({
     entry: ["src/**/*.ts", "src/**/*.tsx", "!src/**/*.d.ts"],
     clean: true,
     deps: {
+      resolveDepSubpath: true,
       // Agent detection and image dimension extraction are build-time
       // implementation details, so inline them rather than requiring vinext
       // consumers to install them. Same for pathslash: it is our own ~90-line
@@ -97,9 +98,7 @@ export default defineConfig({
       entryFileNames: renameBundledDepsOutput,
       chunkFileNames: renameBundledDepsOutput,
     },
-    dts: {
-      tsgo: { path: getTscPath() },
-    },
+    dts: { generator: "tsgo", tsgo: { path: getTscPath() } },
     copy: [
       {
         from: "src/shims/next-shims-public.d.ts",
