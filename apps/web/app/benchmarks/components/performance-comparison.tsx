@@ -179,6 +179,7 @@ function frameColor(frame: PositionedFrame) {
 
 function FlameGraphDialog({ measurement }: { measurement: Comparison["measurements"][number] }) {
   const [flameGraph, setFlameGraph] = useState(measurement.flameGraph);
+  const [graphRevision, setGraphRevision] = useState(0);
   const [profileState, setProfileState] = useState<"idle" | "loading" | "loaded" | "error">(
     measurement.flameGraph ? "loaded" : "idle",
   );
@@ -197,6 +198,7 @@ function FlameGraphDialog({ measurement }: { measurement: Comparison["measuremen
       );
       if (!graph) throw new Error("Profile contains no samples");
       setFlameGraph(graph);
+      setGraphRevision((revision) => revision + 1);
       setProfileState("loaded");
     } catch (error) {
       console.error(error);
@@ -250,6 +252,7 @@ function FlameGraphDialog({ measurement }: { measurement: Comparison["measuremen
           )}
           {flameGraph && (
             <FlameGraph
+              key={graphRevision}
               flameGraph={flameGraph}
               ariaLabel={`${measurement.implementationLabel} ${measurement.label} interactive flame graph`}
             />
@@ -292,15 +295,6 @@ export function FlameGraph({
   const maxDepth = frames.length > 0 ? Math.max(...frames.map((frame) => frame.depth)) : 0;
   const rowHeight = 24;
   const height = (maxDepth + 1) * rowHeight;
-
-  useEffect(() => {
-    const nextFilters = defaultTraceFilters();
-    const nextRoot = graphForFilters(fullGraph, nextFilters);
-    setCategoryFilters(nextFilters);
-    setFocusPath(nextRoot ? [nextRoot] : []);
-    setFrameQuery("");
-    setHovered(null);
-  }, [fullGraph]);
 
   useEffect(() => {
     const viewport = graphViewportRef.current;
