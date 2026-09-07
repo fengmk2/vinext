@@ -119,7 +119,7 @@ describe("typeof window compilation", () => {
     expect(supportsNativeTypeofWindowFolding("8.2.0", "1.1.3")).toBe(false);
   });
 
-  it("skips custom scan folding for modules in the Vite cache directory", async () => {
+  it("folds final builds but skips modules in the Vite cache directory", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "vinext-typeof-window-cache-"));
     temporaryDirectories.push(root);
     const cacheDir = path.join(root, ".vite-cache[custom]");
@@ -172,6 +172,29 @@ describe("typeof window compilation", () => {
     expect(
       await transform.call(context as never, `${source}\nconsole.log("changed")`, appPageId),
     ).not.toBe(cachedServerResult);
+
+    const finalBuildContext = {
+      environment: {
+        config: {
+          ...context.environment.config,
+          build: { write: true },
+        },
+      },
+    };
+    const finalBuildSource = `function load(value = typeof window !== "undefined" ? import("browser-only") : null) {
+  var window
+  return value
+}
+load()`;
+    const finalBuildResult = await transform.call(
+      finalBuildContext as never,
+      finalBuildSource,
+      appPageId,
+    );
+    expect(finalBuildResult).toMatchObject({ code: expect.stringContaining("var window") });
+    expect(finalBuildResult).not.toMatchObject({
+      code: expect.stringContaining("browser-only"),
+    });
   });
 
   it("only folds references to the global window binding", () => {
