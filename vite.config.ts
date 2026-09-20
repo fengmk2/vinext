@@ -133,6 +133,14 @@ export default defineConfig({
     ],
   },
   test: {
+    // Vitest v4 compatibility: preserve mock call history.
+    // Remove after tests no longer rely on calls from setup or earlier tests.
+    // https://vitest.dev/guide/migration/#clearmocks-is-enabled-by-default
+    clearMocks: false,
+    // Vitest v4 compatibility: keep separate Vite servers for inline projects.
+    // Remove when plugins and config hooks can run once for shared projects.
+    // https://vitest.dev/guide/migration/#inline-projects-share-the-vite-server-by-default
+    sharedViteServer: false,
     // GitHub Actions reporter adds inline failure annotations in PR diffs.
     // Agent reporter suppresses passing test noise when running inside AI agents.
     reporters: process.env.CI ? ["default", "github-actions"] : ["default", "agent"],
@@ -165,10 +173,18 @@ export default defineConfig({
 
     projects: [
       {
+        // Vitest v4 compatibility: keep this inline project independent of the root config.
+        // Remove to inherit root options, including plugins and setup files.
+        // https://vitest.dev/guide/migration/#inline-projects-inherit-the-root-config-by-default
+        extends: false,
         resolve: {
           alias: WORKSPACE_SRC_ALIAS,
         },
         test: {
+          // Vitest v4 compatibility: preserve mock call history.
+          // Remove after tests no longer rely on calls from setup or earlier tests.
+          // https://vitest.dev/guide/migration/#clearmocks-is-enabled-by-default
+          clearMocks: false,
           name: "unit",
           setupFiles: [MSW_SETUP],
           // `scripts/**` covers the release-tooling unit tests
@@ -176,7 +192,9 @@ export default defineConfig({
           // are pure-logic and have no fixture/server dependencies.
           include: ["tests/**/*.test.ts", "scripts/**/*.test.ts"],
           exclude: [
-            "tests/fixtures/**/node_modules/**",
+            // Browser fixtures also create node_modules symlinks. Keep dependency
+            // tests in their own package suites when those links are present.
+            "**/node_modules/**",
             // Integration tests spin up Vite dev servers against shared fixture
             // dirs and use per-worker optimizer caches in their own project.
             // When adding a test that calls startFixtureServer() or createServer(),
@@ -237,10 +255,18 @@ export default defineConfig({
         },
       },
       {
+        // Vitest v4 compatibility: keep this inline project independent of the root config.
+        // Remove to inherit root options, including plugins and setup files.
+        // https://vitest.dev/guide/migration/#inline-projects-inherit-the-root-config-by-default
+        extends: false,
         resolve: {
           alias: WORKSPACE_SRC_ALIAS,
         },
         test: {
+          // Vitest v4 compatibility: preserve mock call history.
+          // Remove after tests no longer rely on calls from setup or earlier tests.
+          // https://vitest.dev/guide/migration/#clearmocks-is-enabled-by-default
+          clearMocks: false,
           name: "integration",
           env: {
             VINEXT_PARALLEL_INTEGRATION: "true",
