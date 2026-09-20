@@ -5,12 +5,14 @@ const ROOT = new URL("../../", import.meta.url).pathname;
 export function discoverIntegrationFiles() {
   let raw;
   try {
-    raw = execSync("vp test list --project integration --filesOnly", {
+    raw = execSync("vp test list --project integration --filesOnly --no-static-parse", {
       cwd: ROOT,
       encoding: "utf8",
     });
   } catch {
-    throw new Error("Failed to run 'vp test list --project integration --filesOnly'");
+    throw new Error(
+      "Failed to run 'vp test list --project integration --filesOnly --no-static-parse'",
+    );
   }
 
   const files = [];
