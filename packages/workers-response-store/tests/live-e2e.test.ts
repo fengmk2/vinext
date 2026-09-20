@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { test } from "vitest";
+import { test } from "vite-plus/test";
 
 const base =
   process.env.LIVE_CACHE_BASE ?? "https://vinext-programmatic-cache-poc-user.vinext.workers.dev";
