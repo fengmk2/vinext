@@ -1,4 +1,5 @@
-import path from "pathslash";
+import fs from "node:fs";
+import path, { toSlash } from "pathslash";
 
 function normalizeBase(base: string): string {
   if (!base || base === "/") return "/";
@@ -26,6 +27,15 @@ export function createPagesDevModuleUrl(
   // Drive-letter roots need win32 semantics even on POSIX hosts (tests feed
   // Windows shapes there); pathslash's win32 already emits "/" on any host.
   const pathImpl = /^[A-Za-z]:[\\/]/.test(viteRoot) ? path.win32 : path;
-  const relativePath = pathImpl.relative(viteRoot, moduleFilePath);
+  let relativePath = pathImpl.relative(viteRoot, moduleFilePath);
+  // Vite can resolve its root through a symlink (for example /var to
+  // /private/var on macOS) while the route scanner keeps the original path.
+  if (relativePath.startsWith("../")) {
+    try {
+      relativePath = pathImpl.relative(viteRoot, toSlash(fs.realpathSync.native(moduleFilePath)));
+    } catch {
+      // Keep Vite's existing outside-root URL if the file disappeared.
+    }
+  }
   return normalizeBase(viteBase) + encodePagesDevModulePath(relativePath);
 }
