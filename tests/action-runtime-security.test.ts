@@ -301,7 +301,7 @@ export default function Page() {
 
   it("keeps offline-computable action ids harmless by enforcing route ownership", async () => {
     const normalizedActionPath = path.relative(
-      fixtureRoot,
+      await fs.realpath(fixtureRoot),
       await fs.realpath(path.join(fixtureRoot, "app/admin/actions.ts")),
     );
     const offlineActionId = `${createHash("sha256").update(normalizedActionPath).digest("hex").slice(0, 12)}#deleteEverything`;

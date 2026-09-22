@@ -50,7 +50,7 @@ catalog:
   recma-codehike: 0.0.1
   remark-codehike: 0.0.1
   "@vitejs/plugin-rsc": ^0.5.34
-  "@vitest/coverage-istanbul": 4.1.11
+  "@vitest/coverage-istanbul": 5.0.1
   better-auth: ^1.5.6
   better-sqlite3: ^12.0.0
   class-variance-authority: ^0.7.1
@@ -95,10 +95,10 @@ catalog:
   ua-parser-js: 1.0.35
   use-count-up: 3.0.1
   validator: ^13.15.26
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
+  vite: npm:@voidzero-dev/vite-plus-core@0.0.0-commit.e0f77ee2353b38c77d7165d3305f9f6d705b4d62
   vite-plugin-commonjs: ^0.10.4
-  vite-plus: 0.3.2
-  vitest: 4.1.11
+  vite-plus: 0.0.0-commit.e0f77ee2353b38c77d7165d3305f9f6d705b4d62
+  vitest: 5.0.1
   web-vitals: ^4.2.4
   wrangler: ^4.118.0
   zod: 3.24.3
@@ -111,10 +111,10 @@ catalogs:
     zod: ^3.25.76
 
 overrides:
-  vite: "catalog:"
-  vitest: "catalog:"
   picomatch: ">=2.3.2"
   srvx: ">=0.11.13"
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
 
 peerDependencyRules:
   allowAny:
@@ -153,3 +153,17 @@ allowBuilds:
   # @sentry/nextjs pulls in @sentry/cli for source-map upload tooling. The
   # tests only exercise the runtime SDK, so the CLI postinstall is unnecessary.
   "@sentry/cli": false
+minimumReleaseAgeExclude:
+  # The Vite+ preview pins these Oxc releases before their 24-hour age window.
+  - "@oxc-project/runtime@0.151.0"
+  - "@oxc-project/types@0.151.0"
+  - vite-plus
+  - "@voidzero-dev/*"
+  - oxlint
+  - "@oxlint/*"
+  - oxlint-tsgolint
+  - "@oxlint-tsgolint/*"
+  - oxfmt
+  - "@oxfmt/*"
+  - vitest
+  - "@vitest/*"

@@ -1624,6 +1624,16 @@ export default function vinext(options: VinextOptions = {}): PluginOption[] {
   // which keeps backslashes on Windows. The shim files exist in the vinext
   // package before plugin init, so realpath is safe to evaluate eagerly.
   const canonicalize = (p: string): string => toSlash(tryRealpathSync(p) ?? p);
+  // Vite resolves symlinked roots, while route scans keep the path supplied
+  // by the project. Compare watcher paths in the route scanner's path space.
+  const toRouteSourcePath = (viteRoot: string, filePath: string): string => {
+    const normalizedPath = toSlash(filePath);
+    const relativePath = path.relative(toSlash(viteRoot), normalizedPath);
+    if (relativePath === ".." || relativePath.startsWith("../") || path.isAbsolute(relativePath)) {
+      return normalizedPath;
+    }
+    return path.join(root, relativePath);
+  };
   const pageTransformCanonicalPaths = new Map<string, string>();
   const canonicalizePageTransformPath = (modulePath: string): string => {
     const cached = pageTransformCanonicalPaths.get(modulePath);
@@ -5041,6 +5051,7 @@ export const loadServerActionClient = ${
         order: "post",
         handler(options: HotUpdateOptions) {
           if (!hasPagesDir) return;
+          const sourcePath = toRouteSourcePath(options.server.config.root, options.file);
           const isPagesAppFile = (filePath: string): boolean => {
             const relativePath = path.relative(pagesDir, filePath);
             return (
@@ -5065,12 +5076,10 @@ export const loadServerActionClient = ${
             const relativeAppPath = path.relative(appDir, cleanPath);
             return relativeAppPath.startsWith("..") || path.isAbsolute(relativeAppPath);
           };
-          const pagesAppChanged = isPagesAppFile(options.file);
-          const pagesAssetGraphScriptChanged = isPotentialPagesAssetGraphScript(options.file);
+          const pagesAppChanged = isPagesAppFile(sourcePath);
+          const pagesAssetGraphScriptChanged = isPotentialPagesAssetGraphScript(sourcePath);
           const pagesAssetGraphChanged =
-            pagesAppChanged ||
-            STYLESHEET_FILE_RE.test(options.file) ||
-            pagesAssetGraphScriptChanged;
+            pagesAppChanged || STYLESHEET_FILE_RE.test(sourcePath) || pagesAssetGraphScriptChanged;
           if (pagesAssetGraphChanged) {
             for (const env of Object.values(options.server.environments)) {
               const mod = env.moduleGraph.getModuleById(RESOLVED_PAGES_CLIENT_ASSETS);
@@ -5392,8 +5401,9 @@ export const loadServerActionClient = ${
           if (hasCloudflarePlugin && hasPagesDir && !hasAppDir) invalidatePagesServerEntry();
         };
 
-        server.watcher.on("add", (filePath: string) => {
-          updatePublicFileRoute(filePath, true);
+        server.watcher.on("add", (watchedPath: string) => {
+          updatePublicFileRoute(watchedPath, true);
+          const filePath = toRouteSourcePath(server.config.root, watchedPath);
           let routeChanged = false;
           const pagesAppChanged = isPagesAppFile(filePath);
           const pagesAssetGraphScriptChanged = isPotentialPagesAssetGraphScript(filePath);
@@ -5424,7 +5434,8 @@ export const loadServerActionClient = ${
             revalidateHybridRoutes();
           }
         });
-        server.watcher.on("change", (filePath: string) => {
+        server.watcher.on("change", (watchedPath: string) => {
+          const filePath = toRouteSourcePath(server.config.root, watchedPath);
           const pagesAppChanged = isPagesAppFile(filePath);
           const pagesAssetGraphScriptChanged = isPotentialPagesAssetGraphScript(filePath);
           if (
@@ -5434,8 +5445,9 @@ export const loadServerActionClient = ${
             invalidatePagesClientAssetsModule();
           }
         });
-        server.watcher.on("unlink", (filePath: string) => {
-          updatePublicFileRoute(filePath, false);
+        server.watcher.on("unlink", (watchedPath: string) => {
+          updatePublicFileRoute(watchedPath, false);
+          const filePath = toRouteSourcePath(server.config.root, watchedPath);
           let routeChanged = false;
           const pagesAppChanged = isPagesAppFile(filePath);
           const pagesAssetGraphScriptChanged = isPotentialPagesAssetGraphScript(filePath);
