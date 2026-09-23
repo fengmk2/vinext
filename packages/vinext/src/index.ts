@@ -6797,10 +6797,11 @@ export const loadServerActionClient = ${
       },
     },
     // Toolchains before Vite 8.1.4 / Rolldown 1.1.4 can run native define
-    // folding too late to prune dead imports, so retain the custom fold for
-    // every build. Newer toolchains only need it for plugin-RSC's write-less
-    // analysis builds, which replace modules with lexer-discovered imports
-    // before native folding runs.
+    // folding too late to prune dead imports, so retain the custom fold during
+    // development. Every production build also needs the scope-aware fold:
+    // native define can treat a function-body `var window` as shadowing a
+    // default-parameter reference. Write-less RSC analysis additionally prunes
+    // imports before scan-strip replaces modules with lexer-discovered imports.
     {
       name: "vinext:typeof-window-scan",
       apply(_config, environment) {
@@ -6811,22 +6812,18 @@ export const loadServerActionClient = ${
         filter: { code: consumerEnvironmentConditionFilter },
         handler(code, id) {
           const scansImports = this.environment.config.build.write === false;
-          const replaceTypeofWindow = !useNativeTypeofWindowFolding || scansImports;
           const replaceProcessBrowser = scansImports;
-          if (!replaceTypeofWindow && !replaceProcessBrowser) return null;
           const cacheDir = `${toSlash(this.environment.config.cacheDir).replace(/\/$/, "")}/`;
           if (toSlash(id).startsWith(cacheDir)) return null;
 
           const typeofWindow = getTypeofWindowReplacement(this.environment);
           const processBrowser = this.environment.config.consumer === "client";
-          const variant = `${replaceTypeofWindow ? typeofWindow : "-"}:${
-            replaceProcessBrowser ? processBrowser : "-"
-          }`;
+          const variant = `${typeofWindow}:${replaceProcessBrowser ? processBrowser : "-"}`;
           return cachedConsumerConditionTransform(id, code, variant, () =>
             replaceConsumerEnvironmentConditions(
               code,
               {
-                ...(replaceTypeofWindow ? { typeofWindow } : {}),
+                typeofWindow,
                 ...(replaceProcessBrowser ? { processBrowser } : {}),
                 pruneUnreachableImports: scansImports,
               },
