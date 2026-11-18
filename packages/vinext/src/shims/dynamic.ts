@@ -176,9 +176,10 @@ let DynamicErrorBoundary: ComponentType<DynamicErrorBoundaryProps> | null | unde
 function getDynamicErrorBoundary() {
   if (DynamicErrorBoundary) return DynamicErrorBoundary;
   if (!React.Component) return null;
-  DynamicErrorBoundary = class extends (
-    (React.Component<DynamicErrorBoundaryProps, DynamicErrorBoundaryState>)
-  ) {
+  class ErrorBoundary extends React.Component<
+    DynamicErrorBoundaryProps,
+    DynamicErrorBoundaryState
+  > {
     constructor(props: DynamicErrorBoundaryProps) {
       super(props);
       this.state = { error: null, resetKey: props.resetKey };
@@ -208,7 +209,8 @@ function getDynamicErrorBoundary() {
       }
       return this.props.children;
     }
-  };
+  }
+  DynamicErrorBoundary = ErrorBoundary;
   return DynamicErrorBoundary;
 }
 
